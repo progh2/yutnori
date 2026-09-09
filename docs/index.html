@@ -19,406 +19,261 @@
     --ink-light: #fdf6e3;
     --ink-muted: #b9d2c4;
     --shadow: 0 10px 30px -10px rgba(0,0,0,.55);
+    --glass: rgba(10,40,32,.55);
   }
   *{ box-sizing: border-box; }
-  html,body{ margin:0; }
+  html,body{ margin:0; height:100%; overflow:hidden; }
   body{
-    background:
-      radial-gradient(120% 140% at 50% 0%, var(--felt) 0%, var(--felt-2) 55%, var(--felt-vignette) 100%);
+    background: var(--felt-vignette);
     color: var(--ink-light);
     font-family: "Noto Sans KR", sans-serif;
-    min-height: 100vh;
   }
-  .wrap{
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 36px 20px 56px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 22px;
+  [hidden]{ display: none !important; }
+
+  .screen3d{ position: fixed; inset: 0; }
+  .screen3d canvas{ display:block; width:100%; height:100%; touch-action:none; }
+
+  .hud{ position: fixed; inset: 0; pointer-events: none; z-index: 5; display:flex; flex-direction:column; }
+  .hud > *{ pointer-events: auto; }
+
+  .panel{
+    background: var(--glass);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(251,241,217,.18);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
   }
 
-  .topbar{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .hud-top{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap: 10px; padding: 14px 16px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand h1{
+    font-family: "Black Han Sans", "Noto Sans KR", sans-serif;
+    font-weight:400; font-size: 20px; margin:0; color: var(--ink-light);
+    text-shadow: 0 2px 0 rgba(0,0,0,.3);
+  }
   .stagebar{
-    display:flex; align-items:center; gap:10px;
-    font-family:"Jua",sans-serif;
-    font-size: 13px;
-    color: var(--ink-muted);
-    letter-spacing: .02em;
+    display:flex; align-items:center; gap:8px;
+    font-family:"Jua",sans-serif; font-size: 11.5px; color: var(--ink-muted);
+    padding: 6px 10px;
   }
   .stagebar .pill{
-    background: rgba(251,241,217,.12);
-    border: 1px solid rgba(251,241,217,.25);
-    color: var(--gold);
-    padding: 4px 12px;
-    border-radius: 999px;
+    background: rgba(251,241,217,.14); border: 1px solid rgba(251,241,217,.28);
+    color: var(--gold); padding: 3px 10px; border-radius: 999px;
   }
   .audio-toggle{
-    background: rgba(251,241,217,.1);
-    border: 1px solid rgba(251,241,217,.25);
-    color: var(--ink-light);
-    border-radius: 999px;
-    width: 34px; height: 34px;
-    font-size: 15px;
-    cursor: pointer;
-    flex: none;
+    background: rgba(251,241,217,.12); border: 1px solid rgba(251,241,217,.28);
+    color: var(--ink-light); border-radius: 999px; width: 34px; height: 34px;
+    font-size: 15px; cursor: pointer; flex:none;
   }
   .audio-toggle:hover{ border-color: var(--gold); }
 
-  h1{
-    font-family: "Black Han Sans", "Noto Sans KR", sans-serif;
-    font-weight: 400;
-    font-size: clamp(30px, 5vw, 44px);
-    margin: 0;
-    text-align: center;
-    color: var(--ink-light);
-    text-shadow: 0 3px 0 rgba(0,0,0,.25);
-    letter-spacing: .01em;
-  }
-  .sub{
-    font-family: "Jua", sans-serif;
-    color: var(--ink-muted);
-    font-size: 14px;
-    margin: -10px 0 4px;
-    text-align: center;
-  }
-
-  [hidden]{ display: none !important; }
-
-  #screen-setup, #screen-game{
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 22px;
-  }
-
-  .stage3d-frame{
-    width: 100%;
-    max-width: 640px;
-    border-radius: 20px;
-    overflow: hidden;
-    position: relative;
-    background: radial-gradient(80% 100% at 50% 15%, #1c5c48 0%, #0a2e24 100%);
-    box-shadow: inset 0 0 0 2px rgba(251,241,217,.14), var(--shadow);
-  }
-  .stage3d-frame canvas{ display:block; width:100%; height:100%; }
-
-  .setup-stage3d{ height: 220px; }
-
-  .setup-card{
-    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.12)), var(--felt);
-    border: 3px solid rgba(251,241,217,.18);
-    border-radius: 28px;
-    padding: 26px;
-    box-shadow: var(--shadow);
-    width: 100%;
-    max-width: 640px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 22px;
-  }
-  .setup-card .ask{
-    font-family: "Jua", sans-serif;
-    font-size: 18px;
-    text-align: center;
-  }
-  .choices{
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    width: 100%;
-  }
-  .choice{
-    background: rgba(251,241,217,.06);
-    border: 2px solid rgba(251,241,217,.2);
-    border-radius: 18px;
-    padding: 16px 10px 14px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-family: "Jua", sans-serif;
-    color: var(--ink-light);
-    transition: transform .15s ease, border-color .15s ease, background .15s ease;
-  }
-  .choice:hover, .choice:focus-visible{
-    transform: translateY(-3px);
-    border-color: var(--gold);
-    background: rgba(242,177,52,.12);
-    outline: none;
-  }
-  .choice .vs{ font-size: 30px; line-height:1; }
-  .choice .label{ font-size: 14px; }
-  .choice .tag{ font-size: 11px; color: var(--ink-muted); }
-
-  .spectator-banner{
-    font-family: "Jua", sans-serif;
-    background: rgba(224,71,58,.16);
-    border: 1.5px dashed var(--red);
-    color: var(--red-ink);
-    border-radius: 14px;
-    padding: 10px 16px;
-    font-size: 13px;
-    text-align: center;
-    width: 100%;
-    max-width: 640px;
-  }
-
-  .player-bar{
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
+  .hud-center-top{ display:flex; justify-content:center; padding: 4px 12px; }
+  .player-bar{ display:flex; gap:12px; align-items:center; padding: 8px 16px; }
   .player-badge{
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(251,241,217,.08);
-    border: 2px solid rgba(251,241,217,.22);
-    border-radius: 999px;
-    padding: 6px 14px 6px 8px;
-    font-family: "Jua", sans-serif;
-    font-size: 13px;
+    display:flex; align-items:center; gap:7px;
+    background: rgba(251,241,217,.1); border: 2px solid rgba(251,241,217,.24);
+    border-radius: 999px; padding: 5px 12px 5px 7px;
+    font-family:"Jua",sans-serif; font-size: 12.5px;
   }
   .player-badge .avatar{
-    width: 26px; height: 26px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px;
+    width: 24px; height: 24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
     background: var(--cream);
   }
   .player-badge.p0 .avatar{ background: var(--gold); }
   .player-badge.p1 .avatar{ background: var(--p2); }
-  .player-badge.active{
-    border-color: var(--gold);
-    background: rgba(242,177,52,.16);
-    box-shadow: 0 0 0 2px rgba(242,177,52,.3) inset;
-  }
-  .player-badge .turn-flag{ margin-right: 2px; }
-  .vs-divider{ font-family:"Jua",sans-serif; color: var(--ink-muted); font-size: 13px; }
+  .player-badge.active{ border-color: var(--gold); background: rgba(242,177,52,.18); box-shadow: 0 0 0 2px rgba(242,177,52,.3) inset; }
+  .vs-divider{ font-family:"Jua",sans-serif; color: var(--ink-muted); font-size:12px; }
 
-  .throw-area{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.12)), var(--felt);
-    border: 3px solid rgba(251,241,217,.18);
-    border-radius: 24px;
-    padding: 22px 24px;
-    box-shadow: var(--shadow);
-    width: 100%;
-    max-width: 640px;
+  .hint-line{
+    text-align:center; font-family:"Jua",sans-serif; font-size: 11.5px;
+    color: rgba(253,246,227,.6); padding: 0 16px 6px;
+  }
+
+  .spectator-banner{
+    margin: 6px auto 0; max-width: 460px;
+    font-family:"Jua",sans-serif; font-size: 12px; text-align:center;
+    background: rgba(224,71,58,.22); border: 1.5px dashed var(--red); color: var(--red-ink);
+    border-radius: 12px; padding: 8px 14px;
+  }
+
+  .hud-bottom{
+    margin-top: auto;
+    display:flex; flex-direction:column; align-items:center; gap: 10px;
+    padding: 14px 16px 18px;
   }
   .throw-btn{
-    font-family: "Jua", sans-serif;
-    font-size: 17px;
-    color: var(--gold-ink);
-    background: var(--gold);
-    border: none;
-    border-radius: 999px;
-    padding: 14px 34px;
-    cursor: pointer;
-    box-shadow: 0 6px 0 #b8791a, 0 8px 16px -4px rgba(0,0,0,.4);
-    transition: transform .1s ease, box-shadow .1s ease;
+    font-family: "Jua", sans-serif; font-size: 16px; color: var(--gold-ink);
+    background: var(--gold); border:none; border-radius:999px; padding: 12px 30px;
+    cursor:pointer; box-shadow: 0 6px 0 #b8791a, 0 8px 16px -4px rgba(0,0,0,.4);
+    transition: transform .1s ease;
   }
   .throw-btn:hover{ transform: translateY(-2px); }
   .throw-btn:active{ transform: translateY(3px); box-shadow: 0 3px 0 #b8791a; }
   .throw-btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
 
   .result-card{
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    background: var(--cream);
-    color: var(--cream-ink);
-    border-radius: 16px;
-    padding: 14px 26px;
-    min-width: 200px;
-    justify-content: center;
-    flex-wrap: wrap;
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; justify-content:center;
+    background: var(--cream); color: var(--cream-ink);
+    border-radius: 14px; padding: 10px 20px; min-width: 170px;
   }
-  .result-name{ font-family: "Black Han Sans", sans-serif; font-size: 30px; }
+  .result-name{ font-family:"Black Han Sans",sans-serif; font-size:24px; }
   .result-name.tone-red{ color: var(--red); }
-  .result-name.tone-jackpot{ color: #1f7a4d; }
-  .result-steps{ font-family:"Jua",sans-serif; font-size: 14px; color: #6c6152; }
+  .result-name.tone-jackpot{ color:#1f7a4d; }
+  .result-steps{ font-family:"Jua",sans-serif; font-size:12.5px; color:#6c6152; }
   .result-extra{
-    font-family:"Jua",sans-serif; font-size: 11px;
-    background: var(--red); color: var(--red-ink);
-    padding: 2px 8px; border-radius: 999px; align-self: center;
+    font-family:"Jua",sans-serif; font-size:10.5px; background:var(--red); color:var(--red-ink);
+    padding:2px 7px; border-radius:999px;
   }
-
-  .throw-history{ display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .throw-history{ display:flex; gap:5px; flex-wrap:wrap; justify-content:center; max-width: 420px; }
   .history-chip{
-    font-family: "Jua", sans-serif; font-size: 11px; color: var(--ink-muted);
-    background: rgba(251,241,217,.08); border: 1px solid rgba(251,241,217,.2);
-    border-radius: 999px; padding: 3px 10px;
+    font-family:"Jua",sans-serif; font-size:10.5px; color: var(--ink-muted);
+    background: rgba(251,241,217,.1); border:1px solid rgba(251,241,217,.22);
+    border-radius:999px; padding:2px 9px;
   }
-
-  .board-frame{ height: 460px; }
-
-  .cinematic-overlay{
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; pointer-events: none;
-    transform: scale(.25);
-    transition: transform .5s cubic-bezier(.22,.85,.3,1), opacity .3s ease;
-    z-index: 6;
+  .action-row{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .reset-link{
+    background:none; border:none; cursor:pointer;
+    font-family:"Jua",sans-serif; color: var(--ink-muted); font-size:11.5px;
+    text-decoration: underline; padding:2px 4px;
   }
-  .cinematic-overlay.show{ opacity: 1; transform: scale(1); }
-  .cinematic-overlay .inner{ width: 78%; height: 78%; border-radius: 20px; overflow: hidden; background: #0a2e24; }
-  .cinematic-overlay canvas{ width:100%; height:100%; display:block; }
+  .reset-link:hover{ color: var(--gold); }
 
   .reaction-bubble{
-    position: absolute;
-    transform: translate(-50%, -100%);
-    font-size: 34px;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
-    opacity: 0;
-    transition: opacity .25s ease, transform .25s ease;
-    pointer-events: none;
-    z-index: 7;
+    position: fixed; transform: translate(-50%,-100%);
+    font-size: 32px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
+    opacity:0; transition: opacity .25s ease, transform .25s ease;
+    pointer-events:none; z-index: 8;
   }
-  .reaction-bubble.show{ opacity: 1; transform: translate(-50%, -130%); }
+  .reaction-bubble.show{ opacity:1; transform: translate(-50%,-130%); }
 
   .shortcut-prompt{
-    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    position: fixed; left:50%; bottom: 150px; transform: translateX(-50%);
     background: var(--cream); color: var(--cream-ink);
-    border-radius: 16px; padding: 12px 16px;
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    box-shadow: var(--shadow);
-    z-index: 8;
-    font-family: "Jua", sans-serif;
-    font-size: 13px;
-    text-align: center;
+    border-radius:16px; padding: 12px 16px;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    box-shadow: var(--shadow); z-index:9;
+    font-family:"Jua",sans-serif; font-size:13px; text-align:center;
   }
   .shortcut-prompt .row{ display:flex; gap:10px; }
   .shortcut-prompt button{
-    font-family: "Jua", sans-serif;
-    border: none; border-radius: 999px;
-    padding: 8px 16px; cursor: pointer;
-    font-size: 12.5px;
+    font-family:"Jua",sans-serif; border:none; border-radius:999px;
+    padding:8px 16px; cursor:pointer; font-size:12.5px;
   }
-  .shortcut-prompt .yes{ background: var(--gold); color: var(--gold-ink); }
-  .shortcut-prompt .no{ background: var(--line-dim); color: var(--cream-ink); }
+  .shortcut-prompt .yes{ background:var(--gold); color:var(--gold-ink); }
+  .shortcut-prompt .no{ background:var(--line-dim); color:var(--cream-ink); }
 
-  .board-caption{
-    font-family: "Jua", sans-serif;
-    font-size: 12.5px;
-    color: var(--ink-muted);
-    text-align: center;
-    max-width: 560px;
+  /* ---- setup screen ---- */
+  #screen-setup .hud{ align-items:center; justify-content:flex-end; }
+  .setup-card{
+    margin-bottom: 8vh;
+    background: var(--glass); backdrop-filter: blur(8px);
+    border: 1px solid rgba(251,241,217,.2);
+    border-radius: 24px; padding: 24px 26px;
+    box-shadow: var(--shadow);
+    width: min(92vw, 460px);
+    display:flex; flex-direction:column; align-items:center; gap:18px;
   }
-
-  .reset-link{
-    background: none; border: none; cursor: pointer;
-    font-family: "Jua", sans-serif;
-    color: var(--ink-muted);
-    font-size: 12.5px;
-    text-decoration: underline;
-    padding: 2px 4px;
+  .setup-card .title{
+    font-family:"Black Han Sans","Noto Sans KR",sans-serif; font-size: clamp(24px,5vw,34px);
+    text-align:center; text-shadow: 0 2px 0 rgba(0,0,0,.3);
   }
-  .reset-link:hover{ color: var(--gold); }
-  .action-row{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+  .setup-card .ask{ font-family:"Jua",sans-serif; font-size:15px; text-align:center; }
+  .choices{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; width:100%; }
+  .choice{
+    background: rgba(251,241,217,.08); border:2px solid rgba(251,241,217,.22);
+    border-radius:16px; padding: 12px 8px 10px; display:flex; flex-direction:column;
+    align-items:center; gap:6px; cursor:pointer; font-family:"Jua",sans-serif;
+    color: var(--ink-light); transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .choice:hover, .choice:focus-visible{ transform: translateY(-3px); border-color: var(--gold); background: rgba(242,177,52,.14); outline:none; }
+  .choice .vs{ font-size:24px; line-height:1; }
+  .choice .label{ font-size:13px; }
+  .choice .tag{ font-size:10px; color: var(--ink-muted); }
 
   footer{
-    font-family: "Jua", sans-serif;
-    color: rgba(185,210,196,.6);
-    font-size: 12px;
-    text-align: center;
+    position:fixed; left:0; right:0; bottom:2px; text-align:center;
+    font-family:"Jua",sans-serif; font-size:10.5px; color: rgba(185,210,196,.55); z-index:4;
   }
   footer a{ color: var(--gold); }
 </style>
 
-<div class="wrap">
-  <div class="topbar">
-    <div class="stagebar"><span class="pill">STAGE 5 / 9</span><span>말 이동 + 3D 카메라 연출</span></div>
-    <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기">🔊</button>
-  </div>
-  <h1>🎴 사이버 윷놀이</h1>
-
-  <section id="screen-setup">
-    <p class="sub">시작하기 전에, 오늘 대결은 누가누가 할까요?</p>
-    <div class="stage3d-frame setup-stage3d" id="setup-stage3d"></div>
+<section id="screen-setup">
+  <div class="screen3d" id="setup-stage3d"></div>
+  <div class="hud">
     <div class="setup-card">
+      <div class="title">🎴 사이버 윷놀이</div>
       <p class="ask">참가자 2명 중 <strong>사람은 몇 명</strong>인가요?</p>
       <div class="choices">
         <button class="choice" onclick="playClick(); choosePlayers(0)">
-          <span class="vs">🤖 vs 🤖</span>
-          <span class="label">0명</span>
-          <span class="tag">봇끼리 관전</span>
+          <span class="vs">🤖 vs 🤖</span><span class="label">0명</span><span class="tag">봇끼리 관전</span>
         </button>
         <button class="choice" onclick="playClick(); choosePlayers(1)">
-          <span class="vs">🧑 vs 🤖</span>
-          <span class="label">1명</span>
-          <span class="tag">혼자 도전</span>
+          <span class="vs">🧑 vs 🤖</span><span class="label">1명</span><span class="tag">혼자 도전</span>
         </button>
         <button class="choice" onclick="playClick(); choosePlayers(2)">
-          <span class="vs">🧑 vs 🧑</span>
-          <span class="label">2명</span>
-          <span class="tag">같이 플레이</span>
+          <span class="vs">🧑 vs 🧑</span><span class="label">2명</span><span class="tag">같이 플레이</span>
         </button>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section id="screen-game" hidden>
-    <div class="player-bar" id="player-bar"></div>
-    <div class="spectator-banner" id="spectator-banner" hidden>
-      👀 관전 모드 — 두 봇이 자동으로 턴을 주고받습니다. (자동 진행 로직은 8단계에서 구현 예정 — 지금은 버튼을 눌러 직접 진행)
+<section id="screen-game" hidden>
+  <div class="screen3d" id="board-stage3d"></div>
+  <div class="hud">
+    <div class="hud-top">
+      <div class="brand"><h1>🎴 사이버 윷놀이</h1></div>
+      <div class="stagebar"><span class="pill">STAGE 5 / 9</span><span>3D 카메라 연출</span></div>
+      <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기">🔊</button>
     </div>
-    <p class="sub">턴마다 카메라가 활성 캐릭터로 줌인 → 윷 던지기 확대 → 리액션 → 줌아웃 순서로 연출됩니다.</p>
+    <div class="hud-center-top">
+      <div class="panel player-bar" id="player-bar"></div>
+    </div>
+    <p class="hint-line">우클릭 드래그로 시점 회전 · 턴마다 카메라가 자동으로 연출됩니다</p>
+    <div class="spectator-banner" id="spectator-banner" hidden>
+      👀 관전 모드 — 자동 진행 로직은 8단계에서 구현 예정, 지금은 버튼으로 직접 진행합니다.
+    </div>
 
-    <div class="throw-area">
-      <button class="throw-btn" id="throw-btn" onclick="takeTurn()">🥢 윷 던지기</button>
-      <div class="result-card">
+    <div class="hud-bottom">
+      <div class="panel result-card">
         <span class="result-name" id="result-name">?</span>
         <span class="result-steps" id="result-steps">아직 던지지 않았어요</span>
         <span class="result-extra" id="result-extra" hidden>한 번 더!</span>
       </div>
       <div class="throw-history" id="throw-history"></div>
-    </div>
-
-    <div class="stage3d-frame board-frame" id="board-stage3d">
-      <div class="cinematic-overlay" id="cinematic-overlay">
-        <div class="inner" id="dice-mount"></div>
-      </div>
-      <div class="reaction-bubble" id="reaction-bubble"></div>
-      <div class="shortcut-prompt" id="shortcut-prompt" hidden>
-        <span>🔀 꼭짓점 도착! 중앙 지름길로 갈까요?</span>
-        <div class="row">
-          <button class="yes" id="shortcut-yes">지름길로!</button>
-          <button class="no" id="shortcut-no">일반 경로로</button>
-        </div>
+      <button class="throw-btn" id="throw-btn" onclick="takeTurn()">🥢 윷 던지기</button>
+      <div class="action-row">
+        <button class="reset-link" onclick="showScreen('setup')">← 참가자 다시 선택하기</button>
+        <button class="reset-link" onclick="runProbabilityCheck()">🎲 확률 검증 (콘솔 로그)</button>
       </div>
     </div>
-
-    <p class="board-caption">🟡 P1 · 🩷 P2 — 각 2개씩, 붉은 깃발 칸(출발점)에서 시작해 한 바퀴 돌아오면 완주합니다. 금색 꼭짓점에서 지름길 선택 가능.</p>
-
-    <div class="action-row">
-      <button class="reset-link" onclick="showScreen('setup')">← 참가자 다시 선택하기</button>
-      <button class="reset-link" onclick="runProbabilityCheck()">🎲 확률 검증 (콘솔에 10,000회 결과 로그)</button>
+  </div>
+  <div class="reaction-bubble" id="reaction-bubble"></div>
+  <div class="shortcut-prompt" id="shortcut-prompt" hidden>
+    <span>🔀 꼭짓점 도착! 중앙 지름길로 갈까요?</span>
+    <div class="row">
+      <button class="yes" id="shortcut-yes">지름길로!</button>
+      <button class="no" id="shortcut-no">일반 경로로</button>
     </div>
-  </section>
+  </div>
+</section>
 
-  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 5</footer>
-</div>
+<footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 5</footer>
 
 <script>
-  // ==================================================================
-  // Yut throw model (plan.md 4.2) — unchanged since stage 4
-  // ==================================================================
+  // ================= Yut throw model (plan.md 4.2) =================
   const MARKED_STICK = 0;
   const CATEGORY_INFO = {
-    backdo: { result: '빽도', steps: -1, extraTurn: false, tone: 'red' },
-    do:     { result: '도',   steps:  1, extraTurn: false, tone: '' },
-    gae:    { result: '개',   steps:  2, extraTurn: false, tone: '' },
-    geol:   { result: '걸',   steps:  3, extraTurn: false, tone: '' },
-    yut:    { result: '윷',   steps:  4, extraTurn: true,  tone: 'jackpot' },
-    mo:     { result: '모',   steps:  5, extraTurn: true,  tone: 'jackpot' },
+    backdo: { result:'빽도', steps:-1, extraTurn:false, tone:'red' },
+    do:     { result:'도',   steps: 1, extraTurn:false, tone:'' },
+    gae:    { result:'개',   steps: 2, extraTurn:false, tone:'' },
+    geol:   { result:'걸',   steps: 3, extraTurn:false, tone:'' },
+    yut:    { result:'윷',   steps: 4, extraTurn:true,  tone:'jackpot' },
+    mo:     { result:'모',   steps: 5, extraTurn:true,  tone:'jackpot' },
   };
   function rollSticks(){ return [0,1,2,3].map(() => Math.random() < 0.5); }
   function classifySticks(sticks){
@@ -437,46 +292,42 @@
   function runProbabilityCheck(){
     const trials = 10000;
     const counts = {};
-    Object.keys(CATEGORY_INFO).forEach(k => counts[k] = 0);
-    for (let i = 0; i < trials; i++) counts[classifySticks(rollSticks())]++;
-    console.log('윷 던지기 확률 검증 (' + trials + '회 시행, 스틱 시뮬레이션 기반)');
-    const expected = { backdo: 1, do: 3, gae: 6, geol: 4, yut: 1, mo: 1 };
+    Object.keys(CATEGORY_INFO).forEach(k => counts[k]=0);
+    for (let i=0;i<trials;i++) counts[classifySticks(rollSticks())]++;
+    console.log('윷 던지기 확률 검증 (' + trials + '회)');
+    const expected = { backdo:1, do:3, gae:6, geol:4, yut:1, mo:1 };
     console.table(Object.keys(CATEGORY_INFO).map(k => ({
       결과: CATEGORY_INFO[k].result,
-      기대확률: (expected[k] / 16 * 100).toFixed(2) + '%',
-      실측확률: (counts[k] / trials * 100).toFixed(2) + '%',
+      기대확률: (expected[k]/16*100).toFixed(2)+'%',
+      실측확률: (counts[k]/trials*100).toFixed(2)+'%',
       횟수: counts[k],
     })));
   }
-
-  function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
+  function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+  function seededRandom(seed){
+    let s = seed % 2147483647; if (s<=0) s += 2147483646;
+    return function(){ s = (s*16807) % 2147483647; return (s-1)/2147483646; };
+  }
+  function hashSeed(str){ let h=0; for (let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))|0; return Math.abs(h)||1; }
 </script>
 
 <script>
-  // ==================================================================
-  // Board graph (plan.md 4.1) — 20 outer nodes + 4 corners + 2 diagonal
-  // shortcuts through a shared center. Movement is a simple linked list
-  // (NEXT / PREV) so a throw just walks N hops; shortcut chains use their
-  // own node ids (tlbr-*, bltr-*, trbl-*) even though tlbr-2/bltr-2/trbl-2
-  // all sit at the same physical center point — that keeps "which way
-  // through the center" unambiguous without extra piece-side state.
-  // ==================================================================
-  const BOARD_S = 8; // board spans -4..+4 on both x and z
-  const BR = [ 4, 4], BL = [-4, 4], TL = [-4,-4], TR = [ 4,-4];
+  // ================= Board graph (plan.md 4.1) =================
+  const BOARD_S = 8;
+  const BR=[4,4], BL=[-4,4], TL=[-4,-4], TR=[4,-4];
   function lerp2(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]; }
-  const CENTER = [0,0];
+  const CENTER=[0,0];
   const mid2 = c => lerp2(c, CENTER, 0.5);
-  const M = { br: mid2(BR), bl: mid2(BL), tl: mid2(TL), tr: mid2(TR) };
+  const M = { br:mid2(BR), bl:mid2(BL), tl:mid2(TL), tr:mid2(TR) };
 
-  const NODE_POS = {}; // id -> [x,z]
+  const NODE_POS = {};
   const sidesXZ = [[BR,BL],[BL,TL],[TL,TR],[TR,BR]];
   const outerXZ = [];
   sidesXZ.forEach(([from,to]) => { for (let i=0;i<5;i++) outerXZ.push(lerp2(from,to,i/5)); });
   outerXZ.forEach((p,i) => NODE_POS['o'+i] = p);
-  NODE_POS['center'] = CENTER;
-  NODE_POS['tlbr-1'] = M.tl; NODE_POS['tlbr-2'] = CENTER; NODE_POS['tlbr-3'] = M.br;
-  NODE_POS['bltr-1'] = M.bl; NODE_POS['bltr-2'] = CENTER; NODE_POS['bltr-3'] = M.tr;
-  NODE_POS['trbl-1'] = M.tr; NODE_POS['trbl-2'] = CENTER; NODE_POS['trbl-3'] = M.bl;
+  NODE_POS['tlbr-1']=M.tl; NODE_POS['tlbr-2']=CENTER; NODE_POS['tlbr-3']=M.br;
+  NODE_POS['bltr-1']=M.bl; NODE_POS['bltr-2']=CENTER; NODE_POS['bltr-3']=M.tr;
+  NODE_POS['trbl-1']=M.tr; NODE_POS['trbl-2']=CENTER; NODE_POS['trbl-3']=M.bl;
 
   const NEXT = {};
   for (let i=0;i<20;i++) NEXT['o'+i] = 'o'+((i+1)%20);
@@ -485,13 +336,9 @@
   NEXT['trbl-1']='trbl-2'; NEXT['trbl-2']='trbl-3'; NEXT['trbl-3']='o5';
   const PREV = {};
   Object.keys(NEXT).forEach(k => { PREV[NEXT[k]] = k; });
-
   const SHORTCUT_ENTRY = { o5:'bltr-1', o10:'tlbr-1', o15:'trbl-1' };
   const CORNER_IDS = ['o0','o5','o10','o15'];
 
-  // Walk `steps` hops from `fromId` (steps<0 = backdo, at most -1 in this game).
-  // Returns an array of node ids visited (excluding the start), ending in
-  // 'FINISH' if the piece completes the lap.
   function walkPath(fromId, steps, useShortcut){
     const path = [];
     let cur = fromId;
@@ -499,15 +346,13 @@
       for (let i=0;i<steps;i++){
         const next = (i===0 && useShortcut && SHORTCUT_ENTRY[cur]) ? SHORTCUT_ENTRY[cur] : NEXT[cur];
         if (next === 'o0'){ path.push('FINISH'); return path; }
-        cur = next;
-        path.push(cur);
+        cur = next; path.push(cur);
       }
     } else if (steps < 0){
       for (let i=0;i<-steps;i++){
         const prev = PREV[cur];
         if (!prev) break;
-        cur = prev;
-        path.push(cur);
+        cur = prev; path.push(cur);
       }
     }
     return path;
@@ -515,19 +360,14 @@
 </script>
 
 <script>
-  // ==================================================================
-  // Audio — everything synthesized with Web Audio API (no external
-  // files: Artifact CSP blocks arbitrary audio hosts anyway, and this
-  // way there's zero licensing to worry about).
-  // ==================================================================
+  // ================= Audio (synthesized, no external files) =================
   let audioCtx = null;
   function getAudioCtx(){
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
-  const audio = { enabled: true, bgmTimer: null, bgmStep: 0 };
-
+  const audio = { enabled:true, bgmTimer:null, bgmStep:0 };
   function toggleAudio(){
     audio.enabled = !audio.enabled;
     document.getElementById('audio-toggle').textContent = audio.enabled ? '🔊' : '🔇';
@@ -537,51 +377,36 @@
     if (!audio.enabled) return;
     const ctx = getAudioCtx();
     const t0 = ctx.currentTime + when;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t0);
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, t0);
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(gain, t0 + attack);
-    g.gain.exponentialRampToValueAtTime(0.001, t0 + attack + decay);
+    g.gain.linearRampToValueAtTime(gain, t0+attack);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+attack+decay);
     osc.connect(g).connect(ctx.destination);
-    osc.start(t0);
-    osc.stop(t0 + attack + decay + 0.05);
+    osc.start(t0); osc.stop(t0+attack+decay+0.05);
   }
   function playNoiseBurst({ duration=0.08, gain=0.25, when=0, filterFreq=1800 } = {}){
     if (!audio.enabled) return;
     const ctx = getAudioCtx();
     const t0 = ctx.currentTime + when;
-    const size = Math.max(1, Math.floor(ctx.sampleRate * duration));
+    const size = Math.max(1, Math.floor(ctx.sampleRate*duration));
     const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
     const data = buffer.getChannelData(0);
-    for (let i=0;i<size;i++) data[i] = (Math.random()*2-1) * (1 - i/size);
-    const src = ctx.createBufferSource();
-    src.buffer = buffer;
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = filterFreq;
+    for (let i=0;i<size;i++) data[i] = (Math.random()*2-1) * (1-i/size);
+    const src = ctx.createBufferSource(); src.buffer = buffer;
+    const filter = ctx.createBiquadFilter(); filter.type='bandpass'; filter.frequency.value=filterFreq;
     const g = ctx.createGain();
     g.gain.setValueAtTime(gain, t0);
-    g.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+duration);
     src.connect(filter).connect(g).connect(ctx.destination);
     src.start(t0);
   }
-  function playClack(){
-    [0,0.06,0.12,0.2].forEach((t,i) => playNoiseBurst({ when:t, duration:0.05, gain:0.22-i*0.02, filterFreq:1400+i*200 }));
-  }
-  function playDing(){
-    playTone(880, { type:'triangle', gain:0.2, decay:0.25 });
-    playTone(1318.5, { type:'triangle', gain:0.14, decay:0.3, when:0.05 });
-  }
-  function playHop(){ playTone(520, { type:'square', gain:0.08, decay:0.06 }); }
-  function playClick(){ playTone(300, { type:'square', gain:0.05, decay:0.04 }); }
-  function playSad(){
-    playTone(300, { type:'sawtooth', gain:0.12, decay:0.18 });
-    playTone(220, { type:'sawtooth', gain:0.12, decay:0.28, when:0.12 });
-  }
-
-  const BGM_NOTES = [392.0, 440.0, 523.25, 587.33, 659.25, 587.33, 523.25, 440.0];
+  function playClack(){ [0,0.06,0.12,0.2].forEach((t,i) => playNoiseBurst({ when:t, duration:0.05, gain:0.22-i*0.02, filterFreq:1400+i*200 })); }
+  function playDing(){ playTone(880,{type:'triangle',gain:0.2,decay:0.25}); playTone(1318.5,{type:'triangle',gain:0.14,decay:0.3,when:0.05}); }
+  function playHop(){ playTone(520,{type:'square',gain:0.08,decay:0.06}); }
+  function playClick(){ playTone(300,{type:'square',gain:0.05,decay:0.04}); }
+  function playSad(){ playTone(300,{type:'sawtooth',gain:0.12,decay:0.18}); playTone(220,{type:'sawtooth',gain:0.12,decay:0.28,when:0.12}); }
+  const BGM_NOTES = [392.0,440.0,523.25,587.33,659.25,587.33,523.25,440.0];
   function startBGM(){
     if (audio.bgmTimer || !audio.enabled) return;
     audio.bgmStep = 0;
@@ -596,239 +421,167 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-  // ==================================================================
-  // Shared little three.js helpers: a character factory (used by both
-  // the decorative setup-screen mascots and the real game pieces) and
-  // an easing fn.
-  // ==================================================================
+  // ================= Shared 3D helpers =================
   function easeOutCubic(t){ return 1 - Math.pow(1-t,3); }
   function easeInOutCubic(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
 
+  // A chibi-proportioned procedural character: big round head, small body, two
+  // simple arms that can swing (for the throw + celebration poses), and a
+  // swappable mouth so it can react with different emotions.
+  //
+  // Why not a real licensed model (Mixamo / VRoid / Quaternius etc.)? Claude
+  // Artifacts can only load *scripts* from a small CDN allowlist — any other
+  // resource (a .glb/.vrm file, a texture, anything fetched with XHR) is
+  // blocked outright, from any host. The only way in would be to inline the
+  // whole binary as a base64 data URI, and there's no reliable/legal way to
+  // source and verify a specific model's license from inside this session.
+  // So instead this character got a real upgrade: bigger head, actual arms
+  // that animate, and a face that changes expression.
   function buildCharacter(color){
     const group = new THREE.Group();
     const bob = new THREE.Group();
     group.add(bob);
 
-    const body = new THREE.Mesh(
-      new THREE.SphereGeometry(0.42, 20, 16),
-      new THREE.MeshStandardMaterial({ color, roughness:0.55 })
-    );
-    body.position.y = 0.42;
+    const skin = new THREE.MeshStandardMaterial({ color, roughness:0.55 });
+    const bodyMat = new THREE.MeshStandardMaterial({ color:0xfbf1d9, roughness:0.7 });
+
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.27,18,14), bodyMat);
+    body.position.y = 0.34;
     body.castShadow = true;
     bob.add(body);
 
-    const eyeMat = new THREE.MeshStandardMaterial({ color:0x241a12, roughness:0.4 });
-    [-0.15, 0.15].forEach(dx => {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 10), eyeMat);
-      eye.position.set(dx, 0.48, 0.36);
-      bob.add(eye);
-    });
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 22, 18), skin);
+    head.position.y = 0.72;
+    head.castShadow = true;
+    bob.add(head);
 
     const band = new THREE.Mesh(
-      new THREE.TorusGeometry(0.43, 0.06, 10, 24),
+      new THREE.TorusGeometry(0.41, 0.055, 10, 24),
       new THREE.MeshStandardMaterial({ color:0xfbf1d9, roughness:0.6 })
     );
     band.rotation.x = Math.PI/2;
-    band.position.y = 0.62;
+    band.position.y = 0.88;
     bob.add(band);
 
-    return { group, bob };
+    const eyeMat = new THREE.MeshStandardMaterial({ color:0x241a12, roughness:0.3 });
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.05,10,10), eyeMat);
+    eyeL.position.set(-0.14, 0.74, 0.35);
+    const eyeR = eyeL.clone(); eyeR.position.x = 0.14;
+    bob.add(eyeL, eyeR);
+
+    // swappable mouths (visibility toggled by emotion)
+    const mouthMat = new THREE.MeshStandardMaterial({ color:0x241a12, roughness:0.3 });
+    const mouthFlat = new THREE.Mesh(new THREE.BoxGeometry(0.09,0.015,0.01), mouthMat);
+    mouthFlat.position.set(0, 0.6, 0.39);
+    const mouthSmile = new THREE.Mesh(new THREE.TorusGeometry(0.08,0.014,8,16,Math.PI), mouthMat);
+    mouthSmile.rotation.z = Math.PI; mouthSmile.position.set(0,0.63,0.37);
+    const mouthFrown = mouthSmile.clone(); mouthFrown.rotation.z = 0; mouthFrown.position.set(0,0.58,0.37);
+    const mouthO = new THREE.Mesh(new THREE.TorusGeometry(0.045,0.02,8,14), mouthMat);
+    mouthO.position.set(0,0.6,0.38);
+    [mouthFlat, mouthSmile, mouthFrown, mouthO].forEach(m => bob.add(m));
+    mouthFlat.visible = true; mouthSmile.visible = false; mouthFrown.visible = false; mouthO.visible = false;
+
+    function shoulder(dx){
+      const pivot = new THREE.Group();
+      pivot.position.set(dx, 0.62, 0);
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.32,10), skin);
+      arm.position.y = -0.16;
+      arm.castShadow = true;
+      pivot.add(arm);
+      return pivot;
+    }
+    const armL = shoulder(-0.28), armR = shoulder(0.28);
+    bob.add(armL, armR);
+    armL.rotation.z = 0.25; armR.rotation.z = -0.25;
+
+    return {
+      group, bob, armL, armR,
+      mouths: { flat:mouthFlat, smile:mouthSmile, frown:mouthFrown, o:mouthO },
+      setMouth(name){ Object.values(this.mouths).forEach(m => m.visible=false); this.mouths[name].visible = true; },
+    };
   }
 </script>
 
 <script>
-  // ==================================================================
-  // Decorative 3D scene behind the setup screen — two idle mascots and
-  // a slow orbiting camera, purely for atmosphere.
-  // ==================================================================
+  // ================= Setup-screen decorative 3D scene =================
   (function(){
     const container = document.getElementById('setup-stage3d');
-    const W = container.clientWidth || 560, H = 220;
-
+    let W = window.innerWidth, H = window.innerHeight;
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(42, W/H, 0.1, 100);
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
-    renderer.setSize(W, H);
+    scene.background = new THREE.Color(0x0a2e24);
+    scene.fog = new THREE.Fog(0x0a2e24, 14, 26);
+    const camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setSize(W,H);
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffe9c7, 0.6));
-    const sun = new THREE.DirectionalLight(0xfff3d6, 0.8);
-    sun.position.set(3,5,4);
-    scene.add(sun);
+    scene.add(new THREE.AmbientLight(0xffe9c7,0.6));
+    const sun = new THREE.DirectionalLight(0xfff3d6,0.85); sun.position.set(3,6,4); scene.add(sun);
 
-    const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(6, 32),
-      new THREE.MeshStandardMaterial({ color:0x0e3c2f, roughness:0.95 })
-    );
-    floor.rotation.x = -Math.PI/2;
-    scene.add(floor);
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(9,40), new THREE.MeshStandardMaterial({ color:0x0e3c2f, roughness:0.95 }));
+    floor.rotation.x = -Math.PI/2; scene.add(floor);
 
-    const p1 = buildCharacter(0xf2b134); p1.group.position.set(-1.1,0,0); scene.add(p1.group);
-    const p2 = buildCharacter(0xd94f8c); p2.group.position.set( 1.1,0,0); scene.add(p2.group);
+    const p1 = buildCharacter(0xf2b134); p1.group.position.set(-1.2,0,0); scene.add(p1.group);
+    const p2 = buildCharacter(0xd94f8c); p2.group.position.set( 1.2,0,0); scene.add(p2.group);
+    p1.setMouth('smile'); p2.setMouth('smile');
+    p1.armR.rotation.z = -1.1; p2.armL.rotation.z = 1.1;
 
     let angle = 0;
     function tick(now){
       requestAnimationFrame(tick);
       if (document.getElementById('screen-setup').hidden) return;
-      angle += 0.004;
-      camera.position.set(Math.sin(angle)*4.2, 2.4, Math.cos(angle)*4.2);
-      camera.lookAt(0, 0.5, 0);
+      angle += 0.003;
+      camera.position.set(Math.sin(angle)*5, 2.2, Math.cos(angle)*5);
+      camera.lookAt(0, 0.6, 0);
       p1.bob.position.y = 0.08*Math.sin((now||0)/450);
       p2.bob.position.y = 0.08*Math.sin((now||0)/450 + 1.6);
       renderer.render(scene, camera);
     }
     requestAnimationFrame(tick);
+    window.addEventListener('resize', () => {
+      if (document.getElementById('screen-setup').hidden) return;
+      W = window.innerWidth; H = window.innerHeight;
+      camera.aspect = W/H; camera.updateProjectionMatrix();
+      renderer.setSize(W,H);
+    });
   })();
 </script>
 
 <script>
-  // ==================================================================
-  // Dice-throw 3D scene (stage 4), now mounted inside the cinematic
-  // overlay so it can be scaled up to "fill the screen" for a throw.
-  // ==================================================================
-  (function(){
-    const container = document.getElementById('dice-mount');
-    const W = 480, H = 480;
+  // ================= Main 3D scene: board, characters, sticks, camera =================
+  const board3d = (function(){
+    const container = document.getElementById('board-stage3d');
+    let W = window.innerWidth, H = window.innerHeight;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, W/H, 1, 2000);
-    camera.position.set(0, 260, 300);
-    camera.lookAt(0,0,0);
-
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
-    renderer.setSize(W, H);
+    scene.background = new THREE.Color(0x0a2e24);
+    scene.fog = new THREE.Fog(0x0a2e24, 14, 26);
+    const camera = new THREE.PerspectiveCamera(46, W/H, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    renderer.setSize(W,H);
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffe9c7, 0.55));
-    const sun = new THREE.DirectionalLight(0xfff3d6, 0.9);
-    sun.position.set(120,260,160);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(512,512);
-    scene.add(sun);
-
-    const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(150, 40),
-      new THREE.MeshStandardMaterial({ color:0x0e3c2f, roughness:0.95 })
-    );
-    floor.rotation.x = -Math.PI/2;
-    floor.receiveShadow = true;
-    scene.add(floor);
-
-    const STICK_LEN=92, STICK_W=15, STICK_H=11;
-    function stickMats(){
-      const wood = new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 });
-      const flat = new THREE.MeshStandardMaterial({ color:0xfbf1d9, roughness:0.6 });
-      const round = new THREE.MeshStandardMaterial({ color:0x6b4023, roughness:0.85 });
-      return [wood,wood,flat,round,wood,wood];
-    }
-    const sticks = [0,1,2,3].map(i => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(STICK_W,STICK_H,STICK_LEN), stickMats());
-      mesh.castShadow = true;
-      if (i === MARKED_STICK){
-        const bandMesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(STICK_W*0.62, STICK_W*0.62, STICK_H+2, 16),
-          new THREE.MeshStandardMaterial({ color:0xe0473a, roughness:0.6 })
-        );
-        bandMesh.rotation.x = Math.PI/2;
-        mesh.add(bandMesh);
-      }
-      scene.add(mesh);
-      return mesh;
+    window.addEventListener('resize', () => {
+      W = window.innerWidth; H = window.innerHeight;
+      camera.aspect = W/H; camera.updateProjectionMatrix();
+      renderer.setSize(W,H);
     });
-    const REST_SPOTS = [[-34,-18],[30,-20],[-28,22],[32,20]];
-    function poseIdle(){
-      sticks.forEach((mesh,i) => {
-        const [x,z] = REST_SPOTS[i];
-        mesh.position.set(x, STICK_H/2, z);
-        mesh.rotation.set(0, (i*0.6)%(Math.PI*2), 0);
-      });
-      renderer.render(scene, camera);
-    }
-    window.playThrowAnimation = function(sticksUp){
-      return new Promise(resolve => {
-        const duration = 1300, start = performance.now();
-        const startState = sticks.map(() => ({
-          x:(Math.random()-0.5)*140, z:(Math.random()-0.5)*60-20, y:90+Math.random()*40,
-          ry:Math.random()*Math.PI*2,
-        }));
-        const endState = sticksUp.map((isFlat,i) => {
-          const [x,z] = REST_SPOTS[i];
-          return { x, z, y:STICK_H/2, rx:isFlat?0:Math.PI, ry:Math.random()*Math.PI*2, spinX:3+Math.floor(Math.random()*2) };
-        });
-        function frame(now){
-          const t = Math.min(1, (now-start)/duration);
-          const ePos = easeOutCubic(t);
-          const eRot = easeOutCubic(Math.min(1, t*1.15));
-          sticks.forEach((mesh,i) => {
-            const s = startState[i], e = endState[i];
-            const arc = Math.sin(Math.PI*Math.min(1,t*1.05)) * (1-ePos*0.15);
-            mesh.position.x = THREE.MathUtils.lerp(s.x, e.x, ePos);
-            mesh.position.z = THREE.MathUtils.lerp(s.z, e.z, ePos);
-            mesh.position.y = e.y + arc*70*(1-t*0.4);
-            const spin = e.spinX*Math.PI*2*(1-eRot);
-            mesh.rotation.x = e.rx + spin;
-            mesh.rotation.y = THREE.MathUtils.lerp(s.ry, e.ry, eRot);
-          });
-          renderer.render(scene, camera);
-          if (t < 1) requestAnimationFrame(frame);
-          else {
-            sticks.forEach((mesh,i) => {
-              const e = endState[i];
-              mesh.position.set(e.x, e.y, e.z);
-              mesh.rotation.set(e.rx, e.ry, 0);
-            });
-            renderer.render(scene, camera);
-            resolve();
-          }
-        }
-        requestAnimationFrame(frame);
-      });
-    };
-    poseIdle();
-  })();
-</script>
 
-<script>
-  // ==================================================================
-  // Main 3D board scene: table, node markers, shortcut beams, and the
-  // 4 character pieces. One continuous render loop drives idle bob,
-  // camera tweening and piece-hop animation through a tiny animation
-  // queue (avoids juggling multiple concurrent rAF loops).
-  // ==================================================================
-  const board3d = (function(){
-    const container = document.getElementById('board-stage3d');
-    const W = container.clientWidth || 560, H = 460;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(46, W/H, 0.1, 100);
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
-    renderer.setSize(W, H);
-    renderer.shadowMap.enabled = true;
-    container.insertBefore(renderer.domElement, container.firstChild);
-
-    scene.add(new THREE.AmbientLight(0xffe9c7, 0.6));
-    const sun = new THREE.DirectionalLight(0xfff3d6, 0.85);
-    sun.position.set(4,9,6);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024,1024);
+    scene.add(new THREE.AmbientLight(0xffe9c7,0.6));
+    const sun = new THREE.DirectionalLight(0xfff3d6,0.85);
+    sun.position.set(4,9,6); sun.castShadow = true; sun.shadow.mapSize.set(1024,1024);
     scene.add(sun);
 
-    const table = new THREE.Mesh(
-      new THREE.CircleGeometry(9, 48),
-      new THREE.MeshStandardMaterial({ color:0x0e3c2f, roughness:0.95 })
-    );
-    table.rotation.x = -Math.PI/2;
-    table.receiveShadow = true;
-    scene.add(table);
+    const table = new THREE.Mesh(new THREE.CircleGeometry(11,48), new THREE.MeshStandardMaterial({ color:0x0e3c2f, roughness:0.95 }));
+    table.rotation.x = -Math.PI/2; table.receiveShadow = true; scene.add(table);
 
-    // outer ring path (a flattened tube-ish line via many thin boxes is overkill;
-    // a simple THREE.Line reads perfectly well for a board groove)
+    // ---- board path: corner-to-corner diagonals (fixed — previously only the
+    // mid-to-mid segment was drawn, which is why the center X looked cut off)
     function lineFor(points, color, opacity){
-      const pts = points.map(([x,z]) => new THREE.Vector3(x, 0.02, z));
+      const pts = points.map(([x,z]) => new THREE.Vector3(x, 0.03, z));
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
       const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity: opacity===undefined?1:opacity });
       return new THREE.Line(geo, mat);
@@ -836,36 +589,41 @@
     const ringPts = [];
     for (let i=0;i<=20;i++) ringPts.push(NODE_POS['o'+(i%20)]);
     scene.add(lineFor(ringPts, 0xf5e6bf));
-    scene.add(lineFor([M.br, CENTER, M.tl], 0xf2b134, 0.85));
-    scene.add(lineFor([M.bl, CENTER, M.tr], 0xf2b134, 0.85));
+    scene.add(lineFor([BR, M.br, CENTER, M.tl, TL], 0xf2b134, 0.9));
+    scene.add(lineFor([BL, M.bl, CENTER, M.tr, TR], 0xf2b134, 0.9));
 
-    function nodeMarker(id){
+    // ---- terrain-style stepping-stone tiles (seeded per-node jitter so it
+    // reads as organic/varied rather than a perfectly regular grid) ----
+    function nodeTile(id){
       const isCorner = CORNER_IDS.includes(id);
       const isStart = id === 'o0';
       const isMid = id.endsWith('-1') || id.endsWith('-3');
-      const r = isCorner ? 0.34 : (isMid ? 0.2 : 0.22);
-      const color = isStart ? 0xe0473a : (isCorner ? 0xf2b134 : (isMid ? 0xf2b134 : 0xfbf1d9));
+      const rand = seededRandom(hashSeed(id));
+      const baseR = isCorner ? 0.36 : (isMid ? 0.22 : 0.24);
+      const r = baseR * (0.92 + rand()*0.16);
+      const color = isStart ? 0xe0473a : (isCorner || isMid ? 0xf2b134 : 0xfbf1d9);
       const mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(r, r, 0.1, 20),
+        new THREE.CylinderGeometry(r, r*0.94, 0.12, 6),
         new THREE.MeshStandardMaterial({ color, roughness:0.6 })
       );
       const [x,z] = NODE_POS[id];
-      mesh.position.set(x, 0.05, z);
+      mesh.position.set(x, 0.05 + rand()*0.035, z);
+      mesh.rotation.y = rand()*Math.PI*2;
+      mesh.rotation.x = (rand()-0.5)*0.06;
+      mesh.rotation.z = (rand()-0.5)*0.06;
       mesh.receiveShadow = true;
+      mesh.castShadow = false;
       return mesh;
     }
-    const CENTER_ALIASES = ['center', 'tlbr-2', 'bltr-2', 'trbl-2'];
-    Object.keys(NODE_POS).forEach(id => {
-      if (CENTER_ALIASES.includes(id)) return; // drawn once below instead
-      scene.add(nodeMarker(id));
-    });
+    const CENTER_ALIASES = ['tlbr-2','bltr-2','trbl-2'];
+    Object.keys(NODE_POS).forEach(id => { if (!CENTER_ALIASES.includes(id)) scene.add(nodeTile(id)); });
     const centerMarker = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.3,0.3,0.1,24),
+      new THREE.CylinderGeometry(0.32,0.3,0.12,8),
       new THREE.MeshStandardMaterial({ color:0xf2b134, roughness:0.5, emissive:0x3a2107, emissiveIntensity:0.15 })
     );
-    centerMarker.position.set(0,0.05,0);
+    centerMarker.position.set(0,0.06,0);
     scene.add(centerMarker);
-    // start flag
+
     const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.6,8), new THREE.MeshStandardMaterial({color:0x8a5a34}));
     flagPole.position.set(NODE_POS.o0[0], 0.3, NODE_POS.o0[1]);
     scene.add(flagPole);
@@ -875,29 +633,45 @@
 
     // ---- characters / pieces ----
     const PLAYER_COLORS = [0xf2b134, 0xd94f8c];
-    const pieceMeshes = []; // { group, bob, owner, idx }
-    function benchPos(owner, idx){ return [4+1.3+owner*1.1, 4-idx*0.9]; }
-    function finishPos(owner, idx){ return [-(4+1.3+owner*1.1), -(4-idx*0.9)]; }
+    const pieceMeshes = [];
+    function benchPos(owner, idx){ return [4+1.4+owner*1.2, 4-idx*1.0]; }
+    function finishPos(owner, idx){ return [-(4+1.4+owner*1.2), -(4-idx*1.0)]; }
     for (let owner=0; owner<2; owner++){
       for (let idx=0; idx<2; idx++){
         const c = buildCharacter(PLAYER_COLORS[owner]);
         const [x,z] = benchPos(owner, idx);
-        c.group.position.set(x, 0, z);
+        c.group.position.set(x,0,z);
         scene.add(c.group);
-        pieceMeshes.push(Object.assign(c, { owner, idx }));
+        pieceMeshes.push(Object.assign(c, { owner, idx, slot:'bench:'+owner+':'+idx }));
       }
     }
 
-    // ---- animation queue ----
-    const animations = [];
-    function animate(duration, onUpdate){
-      return new Promise(resolve => {
-        animations.push({ start: performance.now(), duration, onUpdate, resolve });
+    // Small ring layout so pieces sharing a board node don't overlap.
+    function ringOffsets(n){
+      if (n<=1) return [[0,0]];
+      const r = 0.24;
+      return Array.from({length:n}, (_,i) => { const a=(i/n)*Math.PI*2; return [Math.cos(a)*r, Math.sin(a)*r]; });
+    }
+    function restackSlot(slot, exceptMesh){
+      const occupants = pieceMeshes.filter(p => p.slot === slot);
+      const offsets = ringOffsets(occupants.length);
+      occupants.forEach((p,i) => {
+        p.stackOffset = offsets[i];
+        if (p !== exceptMesh && !/^(bench|finish):/.test(slot)){
+          const [bx,bz] = NODE_POS[slot];
+          p.group.position.set(bx+p.stackOffset[0], 0, bz+p.stackOffset[1]);
+        }
       });
     }
 
-    const OVERVIEW_POS = new THREE.Vector3(0.8, 12.5, 12);
-    const OVERVIEW_LOOK = new THREE.Vector3(0.8, 0, 1.2);
+    // ---- animation queue (drives camera tweens + piece hops from one loop) ----
+    const animations = [];
+    function animate(duration, onUpdate){
+      return new Promise(resolve => { animations.push({ start: performance.now(), duration, onUpdate, resolve }); });
+    }
+
+    const OVERVIEW_POS = new THREE.Vector3(1, 13.5, 13);
+    const OVERVIEW_LOOK = new THREE.Vector3(1, 0, 1.2);
     let lookAt = OVERVIEW_LOOK.clone();
     camera.position.copy(OVERVIEW_POS);
     camera.lookAt(lookAt);
@@ -912,8 +686,7 @@
         camera.lookAt(lookAt);
       });
     }
-
-    function piecesOf(owner){ return pieceMeshes.filter(p => p.owner === owner); }
+    function piecesOf(owner){ return pieceMeshes.filter(p => p.owner===owner); }
     function focusPoint(owner){
       const mine = piecesOf(owner);
       const avg = new THREE.Vector3();
@@ -924,57 +697,168 @@
     function toOverview(){ return tweenCamera(OVERVIEW_POS, OVERVIEW_LOOK, 850); }
     function focusOnPlayer(owner){
       const p = focusPoint(owner);
-      const dir = owner === 0 ? 1 : -1;
-      const camPos = new THREE.Vector3(p.x*0.4 + dir*1.5, 2.5, p.z*0.4 + 3.4);
-      const look = new THREE.Vector3(p.x, 0.4, p.z);
+      const dir = owner===0 ? 1 : -1;
+      const camPos = new THREE.Vector3(p.x*0.4+dir*1.6, 2.3, p.z*0.4+3.2);
+      const look = new THREE.Vector3(p.x, 0.55, p.z);
       return tweenCamera(camPos, look, 750);
     }
-
+    function focusOnPoint(worldPos, distance){
+      const camPos = new THREE.Vector3(worldPos.x, worldPos.y + distance*0.55, worldPos.z + distance);
+      return tweenCamera(camPos, worldPos.clone(), 550);
+    }
     function screenPosFor(vec3){
       const v = vec3.clone().project(camera);
       const rect = renderer.domElement.getBoundingClientRect();
-      return {
-        x: rect.left + (v.x*0.5+0.5)*rect.width,
-        y: rect.top + (-v.y*0.5+0.5)*rect.height,
-      };
+      return { x: rect.left + (v.x*0.5+0.5)*rect.width, y: rect.top + (-v.y*0.5+0.5)*rect.height };
     }
 
-    async function movePiece(piece, path){
+    // ---- manual right-drag orbit (adds/overrides on top of whatever the
+    // scripted camera framing currently is, so free-look and the cinematic
+    // tweens never fight each other) ----
+    const spherical = new THREE.Spherical();
+    let dragging = false, lastX=0, lastY=0;
+    renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+    renderer.domElement.addEventListener('pointerdown', e => {
+      if (e.button !== 2) return;
+      dragging = true; lastX=e.clientX; lastY=e.clientY;
+      spherical.setFromVector3(camera.position.clone().sub(lookAt));
+    });
+    window.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dx=e.clientX-lastX, dy=e.clientY-lastY;
+      lastX=e.clientX; lastY=e.clientY;
+      spherical.theta -= dx*0.006;
+      spherical.phi = Math.min(Math.PI*0.85, Math.max(Math.PI*0.12, spherical.phi - dy*0.006));
+      const offset = new THREE.Vector3().setFromSpherical(spherical);
+      camera.position.copy(lookAt).add(offset);
+      camera.lookAt(lookAt);
+    });
+    window.addEventListener('pointerup', e => { if (e.button===2) dragging=false; });
+
+    // ---- sticks thrown in-scene near the active character ----
+    const STICK_LEN=0.5, STICK_W=0.075, STICK_H=0.06;
+    function stickMats(){
+      return [
+        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
+        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
+        new THREE.MeshStandardMaterial({ color:0xfbf1d9, roughness:0.6 }),
+        new THREE.MeshStandardMaterial({ color:0x6b4023, roughness:0.85 }),
+        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
+        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
+      ];
+    }
+    const sticks = [0,1,2,3].map(i => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(STICK_W,STICK_H,STICK_LEN), stickMats());
+      mesh.castShadow = true; mesh.visible = false;
+      if (i === MARKED_STICK){
+        const bandMesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(STICK_W*0.62, STICK_W*0.62, STICK_H+0.01, 14),
+          new THREE.MeshStandardMaterial({ color:0xe0473a, roughness:0.6 })
+        );
+        bandMesh.rotation.x = Math.PI/2;
+        mesh.add(bandMesh);
+      }
+      scene.add(mesh);
+      return mesh;
+    });
+    const STICK_RESTS = [[-0.14,-0.07],[0.12,-0.08],[-0.11,0.09],[0.13,0.08]];
+
+    async function throwSticksNear(spot){
+      sticks.forEach(m => { m.visible = true; });
+      const start = performance.now();
+      const startState = sticks.map(() => ({
+        x: spot.x + (Math.random()-0.5)*0.1,
+        z: spot.z + (Math.random()-0.5)*0.1,
+        y: spot.y,
+        ry: Math.random()*Math.PI*2,
+      }));
+      return function reveal(sticksUp){
+        const endState = sticksUp.map((isFlat,i) => {
+          const [dx,dz] = STICK_RESTS[i];
+          return { x: spot.x+dx, z: spot.z+dz, y: STICK_H/2, rx: isFlat?0:Math.PI, ry: Math.random()*Math.PI*2, spinX: 3+Math.floor(Math.random()*2) };
+        });
+        return animate(1000, t => {
+          const ePos = easeOutCubic(t);
+          const eRot = easeOutCubic(Math.min(1, t*1.15));
+          sticks.forEach((mesh,i) => {
+            const s = startState[i], e = endState[i];
+            const arc = Math.sin(Math.PI*Math.min(1,t*1.05)) * (1-ePos*0.15);
+            mesh.position.x = THREE.MathUtils.lerp(s.x, e.x, ePos);
+            mesh.position.z = THREE.MathUtils.lerp(s.z, e.z, ePos);
+            mesh.position.y = e.y + arc*0.55*(1-t*0.4);
+            const spin = e.spinX*Math.PI*2*(1-eRot);
+            mesh.rotation.x = e.rx + spin;
+            mesh.rotation.y = THREE.MathUtils.lerp(s.ry, e.ry, eRot);
+            if (t>=1){ mesh.position.set(e.x,e.y,e.z); mesh.rotation.set(e.rx,e.ry,0); }
+          });
+        });
+      };
+    }
+    function hideSticks(){ sticks.forEach(m => m.visible = false); }
+
+    // ---- piece movement: camera follows the piece hop by hop ----
+    async function movePiece(piece, path, followCamera){
       let cur = piece.group.position.clone();
       for (const id of path){
         const target = id === 'FINISH'
           ? new THREE.Vector3(...(function(){ const [x,z]=finishPos(piece.owner,piece.idx); return [x,0,z]; })())
           : new THREE.Vector3(NODE_POS[id][0], 0, NODE_POS[id][1]);
         const from = cur.clone();
-        await animate(300, t => { piece.group.position.lerpVectors(from, target, easeOutCubic(t)); });
+        const jobs = [animate(320, t => { piece.group.position.lerpVectors(from, target, easeOutCubic(t)); })];
+        if (followCamera){
+          const camTarget = new THREE.Vector3(target.x*0.35+2.2, 2.1, target.z*0.35+2.6);
+          const lookTarget = new THREE.Vector3(target.x, 0.5, target.z);
+          jobs.push(tweenCamera(camTarget, lookTarget, 320));
+        }
+        await Promise.all(jobs);
         playHop();
         cur = target;
+        piece.slot = id === 'FINISH' ? ('finish:'+piece.owner+':'+piece.idx) : id;
+        restackSlot(piece.slot, piece);
       }
+    }
+
+    // ---- bickering jitter when 2+ characters share a board node ----
+    function applyBickerJitter(now){
+      const bySlot = {};
+      pieceMeshes.forEach(p => { if (!/^(bench|finish):/.test(p.slot)) (bySlot[p.slot] = bySlot[p.slot]||[]).push(p); });
+      Object.values(bySlot).forEach(group => {
+        if (group.length < 2) return;
+        group.forEach((p,i) => {
+          const phase = (i % 2 === 0) ? 0 : Math.PI;
+          const j = Math.sin(now/160 + phase) * 0.05;
+          const [bx,bz] = NODE_POS[p.slot];
+          const [ox,oz] = p.stackOffset || [0,0];
+          p.group.position.x = bx + ox + j;
+          p.group.position.z = bz + oz + Math.cos(now/160+phase)*0.03;
+        });
+      });
     }
 
     function tick(now){
       requestAnimationFrame(tick);
       pieceMeshes.forEach((p,i) => { p.bob.position.y = 0.06*Math.sin(now/500 + i*1.3); });
-      for (let i = animations.length-1; i>=0; i--){
+      applyBickerJitter(now);
+      for (let i=animations.length-1; i>=0; i--){
         const a = animations[i];
-        const t = Math.min(1, (now - a.start) / a.duration);
+        const t = Math.min(1, (now-a.start)/a.duration);
         a.onUpdate(t);
-        if (t >= 1){ animations.splice(i,1); a.resolve(); }
+        if (t>=1){ animations.splice(i,1); a.resolve(); }
       }
       renderer.render(scene, camera);
     }
     requestAnimationFrame(tick);
 
-    return { pieceMeshes, benchPos, finishPos, focusOnPlayer, toOverview, screenPosFor, movePiece, focusPoint };
+    return {
+      pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, toOverview,
+      screenPosFor, movePiece, focusPoint, throwSticksNear, hideSticks, restackSlot,
+    };
   })();
 </script>
 
 <script>
-  // ==================================================================
-  // Game state + turn flow: picks which piece moves, asks about
-  // shortcuts, and drives the camera/dice/reaction choreography.
-  // ==================================================================
-  const state = { players: null, currentPlayerIndex: 0, history: [], pieces: [] };
+  // ================= Game state + turn flow =================
+  const state = { players:null, currentPlayerIndex:0, history:[], pieces:[] };
 
   function showScreen(name){
     document.getElementById('screen-setup').hidden = name !== 'setup';
@@ -982,21 +866,18 @@
   }
 
   function choosePlayers(humanCount){
-    const types = humanCount === 2 ? ['human','human']
-                : humanCount === 1 ? ['human','bot']
-                : ['bot','bot'];
-    state.players = types.map((type, i) => ({ id:i, type, name:'P'+(i+1) }));
+    const types = humanCount===2 ? ['human','human'] : humanCount===1 ? ['human','bot'] : ['bot','bot'];
+    state.players = types.map((type,i) => ({ id:i, type, name:'P'+(i+1) }));
     state.currentPlayerIndex = 0;
     state.history = [];
     state.pieces = [];
-    for (let owner=0; owner<2; owner++){
-      for (let idx=0; idx<2; idx++){
-        state.pieces.push({ owner, idx, place:'start', nodeId:null });
-      }
-    }
+    for (let owner=0; owner<2; owner++) for (let idx=0; idx<2; idx++) state.pieces.push({ owner, idx, place:'start', nodeId:null });
     board3d.pieceMeshes.forEach(pm => {
+      pm.slot = 'bench:'+pm.owner+':'+pm.idx;
       const [x,z] = board3d.benchPos(pm.owner, pm.idx);
-      pm.group.position.set(x, 0, z);
+      pm.group.position.set(x,0,z);
+      pm.setMouth('flat');
+      pm.armL.rotation.z = 0.25; pm.armR.rotation.z = -0.25;
     });
     renderPlayerBar();
     renderHistory();
@@ -1007,57 +888,49 @@
   function renderPlayerBar(){
     const bar = document.getElementById('player-bar');
     bar.innerHTML = '';
-    state.players.forEach((p, i) => {
-      if (i > 0){
-        const vs = document.createElement('span');
-        vs.className = 'vs-divider';
-        vs.textContent = 'vs';
-        bar.appendChild(vs);
-      }
+    state.players.forEach((p,i) => {
+      if (i>0){ const vs=document.createElement('span'); vs.className='vs-divider'; vs.textContent='vs'; bar.appendChild(vs); }
       const badge = document.createElement('span');
       const isActive = i === state.currentPlayerIndex;
-      badge.className = 'player-badge p' + i + (isActive ? ' active' : '');
-      badge.innerHTML =
-        '<span class="avatar">' + (p.type === 'human' ? '🧑' : '🤖') + '</span>' +
-        '<span>' + (isActive ? '<span class="turn-flag">▶</span>' : '') + p.name + ' · ' + (p.type === 'human' ? '사람' : '봇') + '</span>';
+      badge.className = 'player-badge p'+i+(isActive?' active':'');
+      badge.innerHTML = '<span class="avatar">'+(p.type==='human'?'🧑':'🤖')+'</span><span>'+(isActive?'<span class="turn-flag">▶</span>':'')+p.name+' · '+(p.type==='human'?'사람':'봇')+'</span>';
       bar.appendChild(badge);
     });
-    const allBots = state.players.every(p => p.type === 'bot');
-    document.getElementById('spectator-banner').hidden = !allBots;
+    document.getElementById('spectator-banner').hidden = !state.players.every(p => p.type==='bot');
   }
-
   function renderHistory(){
-    document.getElementById('throw-history').innerHTML =
-      state.history.map(r => '<span class="history-chip">' + r + '</span>').join('');
+    document.getElementById('throw-history').innerHTML = state.history.map(r => '<span class="history-chip">'+r+'</span>').join('');
   }
-
   function pickPieceToMove(owner, steps){
-    const mine = state.pieces.filter(p => p.owner === owner && p.place !== 'finished');
-    if (mine.length === 0) return null;
-    if (steps < 0){
-      const onboard = mine.filter(p => p.place === 'onboard');
-      return onboard[0] || null; // 출발 전 상태에서는 빽도 무시 (plan.md 4.3)
-    }
-    const onboard = mine.filter(p => p.place === 'onboard');
+    const mine = state.pieces.filter(p => p.owner===owner && p.place!=='finished');
+    if (mine.length===0) return null;
+    if (steps < 0){ const onboard = mine.filter(p => p.place==='onboard'); return onboard[0] || null; }
+    const onboard = mine.filter(p => p.place==='onboard');
     return onboard[0] || mine[0];
   }
-
   function reactionEmojiFor(category){
-    if (category === 'mo' || category === 'yut'){
-      return ['🤩','💃','🕺'][Math.floor(Math.random()*3)];
-    }
-    if (category === 'backdo') return ['😱','😭'][Math.floor(Math.random()*2)];
-    if (category === 'do') return '😐';
-    return '🙂'; // 개, 걸
+    if (category==='mo' || category==='yut') return ['🤩','💃','🕺'][Math.floor(Math.random()*3)];
+    if (category==='backdo') return ['😱','😭'][Math.floor(Math.random()*2)];
+    if (category==='do') return '😐';
+    return '🙂';
+  }
+  function setPieceExpression(pieceMesh, category){
+    if (category==='mo' || category==='yut'){ pieceMesh.setMouth('o'); pieceMesh.armL.rotation.z=-2.4; pieceMesh.armR.rotation.z=2.4; }
+    else if (category==='backdo'){ pieceMesh.setMouth('frown'); pieceMesh.armL.rotation.z=0.6; pieceMesh.armR.rotation.z=-0.6; }
+    else if (category==='do'){ pieceMesh.setMouth('flat'); }
+    else { pieceMesh.setMouth('smile'); }
+  }
+  function resetPieceExpression(pieceMesh){
+    pieceMesh.setMouth('flat');
+    pieceMesh.armL.rotation.z = 0.25; pieceMesh.armR.rotation.z = -0.25;
   }
 
   function showReaction(owner, emoji){
     const bubble = document.getElementById('reaction-bubble');
     const p = board3d.focusPoint(owner);
-    const pos = board3d.screenPosFor(new THREE.Vector3(p.x, 1.1, p.z));
-    const frameRect = document.getElementById('board-stage3d').getBoundingClientRect();
-    bubble.style.left = (pos.x - frameRect.left) + 'px';
-    bubble.style.top = (pos.y - frameRect.top) + 'px';
+    const pos = board3d.screenPosFor(new THREE.Vector3(p.x, 1.3, p.z));
+    bubble.style.left = pos.x+'px';
+    bubble.style.top = pos.y+'px';
     bubble.textContent = emoji;
     bubble.classList.add('show');
   }
@@ -1068,70 +941,72 @@
     el.hidden = false;
     return new Promise(resolve => {
       function done(val){ el.hidden = true; yes.onclick=null; no.onclick=null; resolve(val); }
-      const yes = document.getElementById('shortcut-yes');
-      const no = document.getElementById('shortcut-no');
+      const yes = document.getElementById('shortcut-yes'), no = document.getElementById('shortcut-no');
       yes.onclick = () => done(true);
       no.onclick = () => done(false);
     });
-  }
-
-  async function showDiceOverlay(){
-    document.getElementById('cinematic-overlay').classList.add('show');
-    await wait(480);
-  }
-  async function hideDiceOverlay(){
-    document.getElementById('cinematic-overlay').classList.remove('show');
-    await wait(350);
   }
 
   async function takeTurn(){
     const btn = document.getElementById('throw-btn');
     btn.disabled = true;
     const owner = state.currentPlayerIndex;
+    const throwerPieces = board3d.pieceMeshes.filter(pm => pm.owner === owner);
+    const thrower = throwerPieces[0];
 
     await board3d.focusOnPlayer(owner);
     playClack();
-    await showDiceOverlay();
+
+    // wind-up + throw arm animation
+    const startArmL = thrower.armL.rotation.z, startArmR = thrower.armR.rotation.z;
+    const spot = thrower.group.position.clone().add(new THREE.Vector3(0, 1.05, 0.35));
+    const revealFn = await board3d.throwSticksNear(spot);
+    await board3d.focusOnPoint(spot, 1.7);
+    thrower.armL.rotation.z = -1.6; thrower.armR.rotation.z = 1.6;
+
     const outcome = rollYut();
-    await window.playThrowAnimation(outcome.sticks);
-    await hideDiceOverlay();
+    await revealFn(outcome.sticks);
+    thrower.armL.rotation.z = startArmL; thrower.armR.rotation.z = startArmR;
+
+    await wait(300);
+    await board3d.focusOnPlayer(owner);
+    board3d.hideSticks();
 
     document.getElementById('result-name').textContent = outcome.result;
-    document.getElementById('result-name').className = 'result-name' + (outcome.tone ? ' tone-' + outcome.tone : '');
-    document.getElementById('result-steps').textContent = (outcome.steps > 0 ? '+' : '') + outcome.steps + '칸 이동';
+    document.getElementById('result-name').className = 'result-name'+(outcome.tone?' tone-'+outcome.tone:'');
+    document.getElementById('result-steps').textContent = (outcome.steps>0?'+':'')+outcome.steps+'칸 이동';
     document.getElementById('result-extra').hidden = !outcome.extraTurn;
     if (outcome.extraTurn) playDing();
-    if (outcome.category === 'backdo') playSad();
+    if (outcome.category==='backdo') playSad();
 
     state.history.unshift(outcome.result);
-    state.history = state.history.slice(0, 8);
+    state.history = state.history.slice(0,8);
     renderHistory();
 
     const piece = pickPieceToMove(owner, outcome.steps);
     showReaction(owner, reactionEmojiFor(outcome.category));
+    setPieceExpression(thrower, outcome.category);
 
     if (piece){
-      const pieceMesh = board3d.pieceMeshes.find(pm => pm.owner === piece.owner && pm.idx === piece.idx);
+      const pieceMesh = board3d.pieceMeshes.find(pm => pm.owner===piece.owner && pm.idx===piece.idx);
       let useShortcut = false;
-      const fromId = piece.place === 'onboard' ? piece.nodeId : 'o0';
-      if (piece.place === 'onboard' && outcome.steps > 0 && SHORTCUT_ENTRY[piece.nodeId]){
-        useShortcut = await askShortcut();
-      }
+      const fromId = piece.place==='onboard' ? piece.nodeId : 'o0';
+      if (piece.place==='onboard' && outcome.steps>0 && SHORTCUT_ENTRY[piece.nodeId]) useShortcut = await askShortcut();
       const path = walkPath(fromId, outcome.steps, useShortcut);
       piece.place = 'onboard';
-      await board3d.movePiece(pieceMesh, path);
-      const last = path[path.length - 1];
-      if (last === 'FINISH') piece.place = 'finished';
-      else piece.nodeId = last;
+      await board3d.movePiece(pieceMesh, path, true);
+      const last = path[path.length-1];
+      if (last === 'FINISH') piece.place = 'finished'; else piece.nodeId = last;
     } else {
       await wait(500);
     }
 
-    await wait(650);
+    await wait(500);
     hideReaction();
+    resetPieceExpression(thrower);
     await board3d.toOverview();
 
-    state.currentPlayerIndex = 1 - owner;
+    state.currentPlayerIndex = 1-owner;
     renderPlayerBar();
     btn.disabled = false;
   }
