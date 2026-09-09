@@ -1,0 +1,259 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사이버 윷놀이</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --felt: #144d3d;
+    --felt-2: #0e3c2f;
+    --felt-vignette: #0a2e24;
+    --cream: #fbf1d9;
+    --cream-ink: #3a2b1a;
+    --line: #f5e6bf;
+    --line-dim: #d8c896;
+    --red: #e0473a;
+    --red-ink: #fff6ef;
+    --gold: #f2b134;
+    --gold-ink: #3a2107;
+    --ink-light: #fdf6e3;
+    --ink-muted: #b9d2c4;
+    --shadow: 0 10px 30px -10px rgba(0,0,0,.55);
+  }
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; }
+  body{
+    background:
+      radial-gradient(120% 140% at 50% 0%, var(--felt) 0%, var(--felt-2) 55%, var(--felt-vignette) 100%);
+    color: var(--ink-light);
+    font-family: "Noto Sans KR", sans-serif;
+    min-height: 100vh;
+  }
+  .wrap{
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 36px 20px 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .stagebar{
+    display:flex; align-items:center; gap:10px;
+    font-family:"Jua",sans-serif;
+    font-size: 13px;
+    color: var(--ink-muted);
+    letter-spacing: .02em;
+  }
+  .stagebar .pill{
+    background: rgba(251,241,217,.12);
+    border: 1px solid rgba(251,241,217,.25);
+    color: var(--gold);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
+
+  h1{
+    font-family: "Black Han Sans", "Noto Sans KR", sans-serif;
+    font-weight: 400;
+    font-size: clamp(30px, 5vw, 44px);
+    margin: 0;
+    text-align: center;
+    color: var(--ink-light);
+    text-shadow: 0 3px 0 rgba(0,0,0,.25);
+    letter-spacing: .01em;
+  }
+  .sub{
+    font-family: "Jua", sans-serif;
+    color: var(--ink-muted);
+    font-size: 14px;
+    margin: -10px 0 4px;
+    text-align: center;
+  }
+
+  .board-card{
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.12)), var(--felt);
+    border: 3px solid rgba(251,241,217,.18);
+    border-radius: 28px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 640px;
+  }
+  .board-card svg{ width: 100%; height: auto; display: block; }
+
+  .node-label{
+    font-family: "Jua", sans-serif;
+    font-size: 15px;
+    fill: var(--cream-ink);
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+  }
+  .node-label.on-dark{ fill: var(--ink-light); }
+
+  .legend{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px 22px;
+    font-family: "Jua", sans-serif;
+    font-size: 13px;
+    color: var(--ink-muted);
+    max-width: 640px;
+  }
+  .legend .item{ display: flex; align-items: center; gap: 8px; }
+  .legend .swatch{
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--line-dim);
+    flex: none;
+  }
+  .legend .swatch.start{ background: var(--red); border-color: var(--red); }
+  .legend .swatch.plain{ background: var(--cream); }
+  .legend .swatch.corner{ background: var(--gold); border-color: var(--gold); }
+  .legend .swatch.center{ background: var(--cream); border-style: dashed; border-color: var(--gold); }
+  .legend .line-sample{ width: 22px; height: 0; border-top: 3px dashed var(--gold); }
+
+  footer{
+    font-family: "Jua", sans-serif;
+    color: rgba(185,210,196,.6);
+    font-size: 12px;
+    text-align: center;
+  }
+  footer a{ color: var(--gold); }
+
+  @media (prefers-reduced-motion: no-preference){
+    .pulse{ animation: pulse 2.4s ease-in-out infinite; }
+    @keyframes pulse{
+      0%,100%{ transform: scale(1); }
+      50%{ transform: scale(1.12); }
+    }
+  }
+</style>
+
+<div class="wrap">
+  <div class="stagebar"><span class="pill">STAGE 1 / 9</span><span>윷말판 렌더링</span></div>
+  <h1>🎴 사이버 윷놀이</h1>
+  <p class="sub">전통 윷판 — 출발점(붉은 칸)에서 시계 반대 방향으로 돌아 다시 출발점으로!</p>
+
+  <div class="board-card">
+    <svg id="board" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <div class="legend">
+    <span class="item"><span class="swatch start"></span>출발점 (0번)</span>
+    <span class="item"><span class="swatch plain"></span>일반 칸</span>
+    <span class="item"><span class="swatch corner"></span>꼭짓점 (지름길 입구)</span>
+    <span class="item"><span class="line-sample"></span>지름길 경로</span>
+    <span class="item"><span class="swatch center"></span>중앙 (교차점)</span>
+  </div>
+
+  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 1</footer>
+</div>
+
+<script>
+(function(){
+  const S = 480;       // square side length
+  const OX = 80, OY = 80; // top-left offset of the square
+  const STEP = S / 5;  // 5 segments per side -> 4 mid nodes + shared corners
+
+  // ---- Build the 20 outer nodes (id 0..19), corners at 0,5,10,15 ----
+  // 0 = start point, bottom-right corner. Movement runs counter-clockwise:
+  // bottom edge (right->left), left edge (bottom->top), top edge (left->right), right edge (top->bottom).
+  const BR = [OX + S, OY + S];
+  const BL = [OX,     OY + S];
+  const TL = [OX,     OY    ];
+  const TR = [OX + S, OY    ];
+
+  function lerp(a, b, t){ return [a[0] + (b[0]-a[0])*t, a[1] + (b[1]-a[1])*t]; }
+
+  const outer = [];
+  const sides = [[BR, BL], [BL, TL], [TL, TR], [TR, BR]];
+  sides.forEach(([from, to]) => {
+    for (let i = 0; i < 4; i++) outer.push(lerp(from, to, i/4)); // corner + 3 mids per side start
+  });
+  // sides.length=4, each contributes 4 points (corner + 3 in-between) = 16... we need 20 total (corner+4 mids *4)
+  // Rebuild properly: each side has 5 steps (corner -> ... -> next corner), contributing its own corner + 4 mids.
+  outer.length = 0;
+  sides.forEach(([from, to]) => {
+    for (let i = 0; i < 5; i++) outer.push(lerp(from, to, i/5));
+  });
+
+  const CENTER = [OX + S/2, OY + S/2];
+  // Diagonal shortcut mid-points (between a corner and the center)
+  const mid = (corner) => lerp(corner, CENTER, 0.5);
+
+  const nodes = outer.map((pos, i) => ({
+    id: 'o' + i,
+    pos,
+    corner: i % 5 === 0,
+    start: i === 0,
+  }));
+
+  const cornerIndex = { br: 0, bl: 5, tl: 10, tr: 15 };
+  const shortcutMids = [
+    { id: 'm-br', pos: mid(BR) },
+    { id: 'm-bl', pos: mid(BL) },
+    { id: 'm-tl', pos: mid(TL) },
+    { id: 'm-tr', pos: mid(TR) },
+  ];
+  const centerNode = { id: 'center', pos: CENTER };
+
+  // ---- Render ----
+  const svg = document.getElementById('board');
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+
+  // outer ring path
+  let d = 'M ' + outer[0][0] + ' ' + outer[0][1];
+  for (let i = 1; i <= outer.length; i++){
+    const p = outer[i % outer.length];
+    d += ' L ' + p[0] + ' ' + p[1];
+  }
+  svg.appendChild(el('path', { d, fill:'none', stroke:'var(--line)', 'stroke-width':10, 'stroke-linejoin':'round' }));
+
+  // diagonal shortcuts: br-mid-center-mid-tl, bl-mid-center-mid-tr
+  function diagonal(cornerA, midA, midB, cornerB){
+    const d2 = `M ${cornerA[0]} ${cornerA[1]} L ${midA[0]} ${midA[1]} L ${CENTER[0]} ${CENTER[1]} L ${midB[0]} ${midB[1]} L ${cornerB[0]} ${cornerB[1]}`;
+    svg.appendChild(el('path', { d: d2, fill:'none', stroke:'var(--gold)', 'stroke-width':6, 'stroke-dasharray':'2 14', 'stroke-linecap':'round' }));
+  }
+  diagonal(BR, shortcutMids[0].pos, shortcutMids[2].pos, TL);
+  diagonal(BL, shortcutMids[1].pos, shortcutMids[3].pos, TR);
+
+  // shortcut mid nodes
+  shortcutMids.forEach(m => {
+    svg.appendChild(el('circle', { cx:m.pos[0], cy:m.pos[1], r:12, fill:'var(--cream)', stroke:'var(--gold)', 'stroke-width':3, 'stroke-dasharray':'4 4' }));
+  });
+
+  // center node
+  svg.appendChild(el('circle', { cx:CENTER[0], cy:CENTER[1], r:16, fill:'var(--cream)', stroke:'var(--gold)', 'stroke-width':4, 'stroke-dasharray':'4 5' }));
+  const centerLabel = el('text', Object.assign({ x:CENTER[0], y:CENTER[1] }, {class:'node-label'}));
+  centerLabel.textContent = '中';
+  svg.appendChild(centerLabel);
+
+  // outer nodes
+  nodes.forEach(n => {
+    const isStart = n.start;
+    const r = n.corner ? 20 : 14;
+    const fill = isStart ? 'var(--red)' : (n.corner ? 'var(--gold)' : 'var(--cream)');
+    svg.appendChild(el('circle', {
+      cx:n.pos[0], cy:n.pos[1], r,
+      fill, stroke: isStart ? 'var(--red)' : (n.corner ? 'var(--gold)' : 'var(--line-dim)'),
+      'stroke-width': n.corner ? 4 : 3,
+      class: isStart ? 'pulse' : ''
+    }));
+    if (isStart){
+      const t = el('text', Object.assign({ x:n.pos[0], y:n.pos[1] }, {class:'node-label on-dark'}));
+      t.textContent = '\u{1F6A9}'; // small flag
+      svg.appendChild(t);
+    }
+  });
+
+  // corner labels (small ordinal, helps orientation)
+  const cornerNames = { 0:'', 5:'', 10:'', 15:'' };
+})();
+</script>
