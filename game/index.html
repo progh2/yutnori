@@ -217,7 +217,87 @@
   }
   .player-badge.human .avatar{ background: var(--gold); }
   .player-badge.bot .avatar{ background: var(--line-dim); }
+  .player-badge.active{
+    border-color: var(--gold);
+    background: rgba(242,177,52,.16);
+    box-shadow: 0 0 0 2px rgba(242,177,52,.3) inset;
+  }
+  .player-badge .turn-flag{ margin-right: 2px; }
   .vs-divider{ font-family:"Jua",sans-serif; color: var(--ink-muted); font-size: 13px; }
+
+  .throw-area{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.12)), var(--felt);
+    border: 3px solid rgba(251,241,217,.18);
+    border-radius: 24px;
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 640px;
+  }
+  .throw-btn{
+    font-family: "Jua", sans-serif;
+    font-size: 17px;
+    color: var(--gold-ink);
+    background: var(--gold);
+    border: none;
+    border-radius: 999px;
+    padding: 14px 34px;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #b8791a, 0 8px 16px -4px rgba(0,0,0,.4);
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .throw-btn:hover{ transform: translateY(-2px); }
+  .throw-btn:active{ transform: translateY(3px); box-shadow: 0 3px 0 #b8791a; }
+  .throw-btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+
+  .result-card{
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    background: var(--cream);
+    color: var(--cream-ink);
+    border-radius: 16px;
+    padding: 14px 26px;
+    min-width: 200px;
+    justify-content: center;
+  }
+  .result-name{
+    font-family: "Black Han Sans", sans-serif;
+    font-size: 30px;
+  }
+  .result-name.tone-red{ color: var(--red); }
+  .result-name.tone-gold{ color: #a8720f; }
+  .result-name.tone-jackpot{ color: #1f7a4d; }
+  .result-steps{ font-family:"Jua",sans-serif; font-size: 14px; color: var(--ink-faint, #6c6152); }
+  .result-extra{
+    font-family:"Jua",sans-serif;
+    font-size: 11px;
+    background: var(--red);
+    color: var(--red-ink);
+    padding: 2px 8px;
+    border-radius: 999px;
+    align-self: center;
+  }
+
+  .throw-history{
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .history-chip{
+    font-family: "Jua", sans-serif;
+    font-size: 11px;
+    color: var(--ink-muted);
+    background: rgba(251,241,217,.08);
+    border: 1px solid rgba(251,241,217,.2);
+    border-radius: 999px;
+    padding: 3px 10px;
+  }
 
   .reset-link{
     background: none; border: none; cursor: pointer;
@@ -239,7 +319,7 @@
 </style>
 
 <div class="wrap">
-  <div class="stagebar"><span class="pill">STAGE 2 / 9</span><span>플레이어 설정</span></div>
+  <div class="stagebar"><span class="pill">STAGE 3 / 9</span><span>턴 방식 윷 던지기</span></div>
   <h1>🎴 사이버 윷놀이</h1>
 
   <section id="screen-setup">
@@ -273,6 +353,16 @@
     </div>
     <p class="sub">전통 윷판 — 출발점(붉은 칸)에서 시계 반대 방향으로 돌아 다시 출발점으로!</p>
 
+    <div class="throw-area">
+      <button class="throw-btn" id="throw-btn" onclick="throwYut()">🥢 윷 던지기</button>
+      <div class="result-card">
+        <span class="result-name" id="result-name">?</span>
+        <span class="result-steps" id="result-steps">아직 던지지 않았어요</span>
+        <span class="result-extra" id="result-extra" hidden>한 번 더!</span>
+      </div>
+      <div class="throw-history" id="throw-history"></div>
+    </div>
+
     <div class="board-card">
       <svg id="board" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
@@ -285,14 +375,38 @@
       <span class="item"><span class="swatch center"></span>중앙 (교차점)</span>
     </div>
 
-    <button class="reset-link" onclick="showScreen('setup')">← 참가자 다시 선택하기</button>
+    <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+      <button class="reset-link" onclick="showScreen('setup')">← 참가자 다시 선택하기</button>
+      <button class="reset-link" onclick="runProbabilityCheck()">🎲 확률 검증 (콘솔에 10,000회 결과 로그)</button>
+    </div>
   </section>
 
-  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 2</footer>
+  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 3</footer>
 </div>
 
 <script>
-  const state = { players: null };
+  // ---- Yut throw model (plan.md 4.2) ----
+  // weight sums to 16; steps<0 is backdo, extraTurn grants another throw (used from stage 7 on)
+  const YUT_TABLE = [
+    { result: '빽도', steps: -1, extraTurn: false, weight: 1, tone: 'red' },
+    { result: '도',   steps:  1, extraTurn: false, weight: 3, tone: '' },
+    { result: '개',   steps:  2, extraTurn: false, weight: 6, tone: '' },
+    { result: '걸',   steps:  3, extraTurn: false, weight: 4, tone: '' },
+    { result: '윷',   steps:  4, extraTurn: true,  weight: 1, tone: 'jackpot' },
+    { result: '모',   steps:  5, extraTurn: true,  weight: 1, tone: 'jackpot' },
+  ];
+  const YUT_TOTAL_WEIGHT = YUT_TABLE.reduce((sum, r) => sum + r.weight, 0); // 16
+
+  function rollYut(){
+    let roll = Math.random() * YUT_TOTAL_WEIGHT;
+    for (const entry of YUT_TABLE){
+      roll -= entry.weight;
+      if (roll < 0) return entry;
+    }
+    return YUT_TABLE[YUT_TABLE.length - 1];
+  }
+
+  const state = { players: null, currentPlayerIndex: 0, history: [] };
 
   function showScreen(name){
     document.getElementById('screen-setup').hidden = name !== 'setup';
@@ -304,7 +418,10 @@
                 : humanCount === 1 ? ['human','bot']
                 : ['bot','bot'];
     state.players = types.map((type, i) => ({ id: i, type, name: 'P' + (i + 1) }));
+    state.currentPlayerIndex = 0;
+    state.history = [];
     renderPlayerBar();
+    renderHistory();
     showScreen('game');
   }
 
@@ -319,14 +436,56 @@
         bar.appendChild(vs);
       }
       const badge = document.createElement('span');
-      badge.className = 'player-badge ' + p.type;
+      const isActive = i === state.currentPlayerIndex;
+      badge.className = 'player-badge ' + p.type + (isActive ? ' active' : '');
       badge.innerHTML =
         '<span class="avatar">' + (p.type === 'human' ? '🧑' : '🤖') + '</span>' +
-        '<span>' + p.name + ' · ' + (p.type === 'human' ? '사람' : '봇') + '</span>';
+        '<span>' + (isActive ? '<span class="turn-flag">▶</span>' : '') + p.name + ' · ' + (p.type === 'human' ? '사람' : '봇') + '</span>';
       bar.appendChild(badge);
     });
     const allBots = state.players.every(p => p.type === 'bot');
     document.getElementById('spectator-banner').hidden = !allBots;
+  }
+
+  function renderHistory(){
+    const box = document.getElementById('throw-history');
+    box.innerHTML = state.history
+      .map(r => '<span class="history-chip">' + r + '</span>')
+      .join('');
+  }
+
+  function throwYut(){
+    const outcome = rollYut();
+
+    document.getElementById('result-name').textContent = outcome.result;
+    document.getElementById('result-name').className = 'result-name' + (outcome.tone ? ' tone-' + outcome.tone : '');
+    document.getElementById('result-steps').textContent =
+      (outcome.steps > 0 ? '+' : '') + outcome.steps + '칸 이동';
+    document.getElementById('result-extra').hidden = !outcome.extraTurn;
+
+    state.history.unshift(outcome.result);
+    state.history = state.history.slice(0, 8);
+    renderHistory();
+
+    // Turn alternation (extra-turn / capture rules land in stage 7 — for now every
+    // throw simply passes to the other player so the turn-based flow is visible).
+    state.currentPlayerIndex = 1 - state.currentPlayerIndex;
+    renderPlayerBar();
+  }
+
+  function runProbabilityCheck(){
+    const trials = 10000;
+    const counts = {};
+    YUT_TABLE.forEach(e => counts[e.result] = 0);
+    for (let i = 0; i < trials; i++) counts[rollYut().result]++;
+
+    console.log('윷 던지기 확률 검증 (' + trials + '회 시행)');
+    console.table(YUT_TABLE.map(e => ({
+      결과: e.result,
+      기대확률: (e.weight / YUT_TOTAL_WEIGHT * 100).toFixed(2) + '%',
+      실측확률: (counts[e.result] / trials * 100).toFixed(2) + '%',
+      횟수: counts[e.result],
+    })));
   }
 </script>
 
