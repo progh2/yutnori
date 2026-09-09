@@ -26,6 +26,7 @@ AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발하는 전�
 
 ## 문서 & 링크
 
+- [docs/yutpan.md](./docs/yutpan.md) — **윷판 29밭에 담긴 뜻** (북극성과 28수, 천원지방, 24절기, 자리 이름, 최단 경로 · 출처 포함)
 - [plan.md](./plan.md) — 상세 PRD (게임 규칙 명세, 시스템 아키텍처 UML, 단계별 개발 계획)
 - [PRD 웹 페이지 (GitHub Pages)](https://progh2.github.io/yutnori/prd.html) — plan.md를 다이어그램과 함께 보기 좋게 렌더링한 버전
 - [Issues](https://github.com/progh2/yutnori/issues) / [Milestones](https://github.com/progh2/yutnori/milestones) — 단계별 작업 추적
