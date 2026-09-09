@@ -19,13 +19,15 @@ AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발하는 전�
 - three.js 기반 3D 윷 던지기 애니메이션, 코믹한 UI 톤앤매너
 - 전원 봇 모드에서는 봇의 의사결정 과정을 시각적으로 관전 가능
 
-## 문서
+## 문서 & 링크
 
 - [plan.md](./plan.md) — 상세 PRD (게임 규칙 명세, 시스템 아키텍처 UML, 단계별 개발 계획)
+- [PRD 웹 페이지 (GitHub Pages)](https://progh2.github.io/yutnori/) — plan.md를 다이어그램과 함께 보기 좋게 렌더링한 버전
+- [Issues](https://github.com/progh2/yutnori/issues) / [Milestones](https://github.com/progh2/yutnori/milestones) — 단계별 작업 추적
 
 ## 개발 방식
 
-이 프로젝트는 [plan.md](./plan.md)의 8단계 계획에 따라 단계적으로 개발됩니다.
+이 프로젝트는 [plan.md](./plan.md)의 9단계 계획에 따라 단계적으로 개발됩니다.
 각 단계는 GitHub Issue로 추적되며, 전체 진행 상황은 Milestone에서 확인할 수 있습니다.
 각 단계의 결과물은 Claude Artifact(단일 HTML 파일)로 게시되어 브라우저에서 바로 실행할 수 있습니다.
 
