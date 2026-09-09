@@ -1,6 +1,7 @@
-# 🎲 사이버 윷놀이 (Cyber Yutnori)
+# ✨ 별밭 윷놀이 (Starfield Yutnori)
 
-AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발하는 전통 윷놀이 웹 게임입니다.
+AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발한 전통 윷놀이 웹 게임입니다.
+북극성과 28수가 들어앉은 **29밭 원형 윷판** 위에서 3D 캐릭터가 윷을 던지고 걸어갑니다.
 2명의 참가자(사람 또는 봇)가 1:1로 턴을 주고받으며, 전통 윷놀이 규칙에 따라 말을 움직여
 먼저 두 말을 모두 완주시키는 쪽이 승리합니다.
 
@@ -29,6 +30,7 @@ AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발하는 전�
 - [docs/yutpan.md](./docs/yutpan.md) — **윷판 29밭에 담긴 뜻** (북극성과 28수, 천원지방, 24절기, 자리 이름, 최단 경로 · 출처 포함)
 - [plan.md](./plan.md) — 상세 PRD (게임 규칙 명세, 시스템 아키텍처 UML, 단계별 개발 계획)
 - [PRD 웹 페이지 (GitHub Pages)](https://progh2.github.io/yutnori/prd.html) — plan.md를 다이어그램과 함께 보기 좋게 렌더링한 버전
+- [docs/models/README.md](./docs/models/README.md) · [docs/audio/README.md](./docs/audio/README.md) — 캐릭터 모델·음원 출처와 라이선스
 - [Issues](https://github.com/progh2/yutnori/issues) / [Milestones](https://github.com/progh2/yutnori/milestones) — 단계별 작업 추적
 
 ## 개발 방식
