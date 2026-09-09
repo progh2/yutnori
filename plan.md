@@ -322,6 +322,23 @@ sequenceDiagram
 
 당초 6.1은 말판을 2D SVG로, 윷 던지기만 3D로 두는 것으로 설계했으나, 5단계 진행 중 요청에 따라 **말판/말/시작 화면을 모두 3D로 통일**했다. 말은 플레이어별로 색이 다른 캐릭터(구체 몸통 + 이모지 얼굴)로 표현하며, 턴마다 카메라가 활성 플레이어 캐릭터로 줌인 → 윷 던지기 화면 확대 → 캐릭터로 복귀(결과에 따른 이모지 리액션) → 전체 화면으로 줌아웃하는 흐름으로 진행된다. 어떤 말을 옮길지는 (수동 선택 UI 대신) 간단한 규칙으로 자동 결정한다 — 이미 출발한 말이 있으면 그 중 가장 덜 전진한 말을 우선 이동, 없으면 새 말을 출발시킨다. 지름길 진입 여부만 그 순간에 별도로 묻는다. 수동으로 이동할 말을 고르는 UI는 필요해지면 이후 단계에서 추가할 수 있다.
 
+### 10.2.1 캐릭터: VRM 모델 도입 (GitHub Pages 전용)
+
+말(캐릭터)은 **VRoid 프로젝트(pixiv)가 공개한 VRM 공식 샘플 모델** 2종을 사용한다.
+
+| 플레이어 | 캐릭터 | 파일 |
+|---|---|---|
+| P1 | 千駄ヶ谷篠 (Sendagaya Shino) | `docs/models/shino.vrm` |
+| P2 | ビビ (Vivi / AvatarSample_E) | `docs/models/vivi.vrm` |
+
+두 파일 모두 VRM 메타데이터에 `redistribution=allow`, `modification=allow`, 상업이용 허용, 크레딧 불필요가 명시되어 있어 공개 저장소 커밋이 가능하다 (상세: `docs/models/README.md`). 원본 14.9/17.9MB를 텍스처만 재인코딩해 각 6.2MB로 줄였다.
+
+- 포즈: `humanoid.getNormalizedBoneNode()` 로 어깨/팔꿈치/고관절/무릎/척추를 제어. three-vrm의 정규화 rest 포즈가 T-포즈라 오일러 순서 모호함을 피하려고 포즈를 (팔 내림·스윙·팔꿈치·상체·머리) 파라미터로 정의하고 쿼터니언으로 합성한다.
+- 표정: VRM 표준 프리셋(`happy`/`sad`/`angry`/`relaxed`/`surprised` + `blink`)을 사용. VRM 0.x의 joy/sorrow/fun은 three-vrm이 자동 매핑한다.
+- 로더는 importmap으로 three 0.180 + `@pixiv/three-vrm@3` (jsDelivr)을 불러온다.
+
+**Artifact 폴백**: Artifact는 CSP상 스크립트 외의 리소스를 불러올 수 없어 `.vrm` fetch가 차단된다. 이 경우 자동으로 코드로 제작한 대체 캐릭터(하루·미오)로 폴백하므로, 같은 파일 하나로 Pages에서는 VRM 모델이, Artifact에서는 폴백 캐릭터가 동작한다 — 과제 요구사항인 "결과물 Artifact 등록"도 계속 만족한다.
+
 ### 10.3 오디오: 합성 사운드 채택
 
 "무료 음원"을 쓰고 싶다는 요청에 대해, 외부 오디오 파일(예: freesound.org, pixabay 등)은 Artifact의 CSP 정책상 애초에 불러올 수 없다 (스크립트 외의 리소스는 지정된 CDN에서도 차단됨). 대신 Web Audio API(OscillatorNode, 버퍼 노이즈)로 효과음(윷가락 부딪히는 소리, 이동, 추가 턴 알림)과 배경 아르페지오 루프를 코드로 직접 합성했다. 라이선스/저작권 걱정이 전혀 없고 완전 무료라는 목적에 오히려 더 부합한다.

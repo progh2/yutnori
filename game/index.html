@@ -199,10 +199,40 @@
     font-family:"Jua",sans-serif; font-size:10.5px; color: rgba(185,210,196,.55); z-index:4;
   }
   footer a{ color: var(--gold); }
+
+  .loading{
+    position:fixed; inset:0; z-index:30;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--felt-vignette);
+    transition: opacity .5s ease;
+  }
+  .loading.done{ opacity:0; pointer-events:none; }
+  .loading-card{
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+    font-family:"Jua",sans-serif; font-size:14px; color: var(--ink-light);
+  }
+  .loading-sub{ font-size:11px; color: var(--ink-muted); }
+  .spinner{
+    width:34px; height:34px; border-radius:50%;
+    border:3px solid rgba(251,241,217,.2); border-top-color: var(--gold);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .spinner{ animation-duration: 3s; } }
 </style>
 
+<!-- one 3D scene behind everything: the title screen and the game share it -->
+<div class="screen3d" id="board-stage3d"></div>
+
+<div class="loading" id="loading">
+  <div class="loading-card">
+    <div class="spinner"></div>
+    <div>캐릭터 불러오는 중… <span id="loading-pct">0%</span></div>
+    <div class="loading-sub">千駄ヶ谷篠 · ビビ (VRoid 프로젝트, 재배포 허용 모델)</div>
+  </div>
+</div>
+
 <section id="screen-setup">
-  <div class="screen3d" id="setup-stage3d"></div>
   <div class="hud">
     <div class="setup-card">
       <div class="title">🎴 사이버 윷놀이</div>
@@ -223,7 +253,6 @@
 </section>
 
 <section id="screen-game" hidden>
-  <div class="screen3d" id="board-stage3d"></div>
   <div class="hud">
     <div class="hud-top">
       <div class="brand"><h1>🎴 사이버 윷놀이</h1></div>
@@ -419,7 +448,15 @@
   function stopBGM(){ clearInterval(audio.bgmTimer); audio.bgmTimer = null; }
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js"
+  }
+}
+</script>
 <script>
   // ================= Shared 3D helpers =================
   function easeOutCubic(t){ return 1 - Math.pow(1-t,3); }
@@ -750,62 +787,8 @@
 </script>
 
 <script>
-  // ================= Setup-screen decorative 3D scene =================
-  (function(){
-    const container = document.getElementById('setup-stage3d');
-    let W = window.innerWidth, H = window.innerHeight;
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a2e24);
-    scene.fog = new THREE.Fog(0x0a2e24, 14, 26);
-    const camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
-    const renderer = new THREE.WebGLRenderer({ antialias:true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
-    renderer.setSize(W,H);
-    container.appendChild(renderer.domElement);
-
-    scene.add(new THREE.AmbientLight(0xffe9c7,0.6));
-    const sun = new THREE.DirectionalLight(0xfff3d6,0.85); sun.position.set(3,6,4); scene.add(sun);
-
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(9,40), new THREE.MeshStandardMaterial({ color:0x0e3c2f, roughness:0.95 }));
-    floor.rotation.x = -Math.PI/2; scene.add(floor);
-
-    const p1 = buildAnimeCharacter(CHARACTER_DESIGNS[0], 0);
-    p1.group.position.set(-1.15,0,0); p1.setExpression('happy'); scene.add(p1.group);
-    const p2 = buildAnimeCharacter(CHARACTER_DESIGNS[1], 0);
-    p2.group.position.set( 1.15,0,0); p2.setExpression('happy'); scene.add(p2.group);
-
-    let angle = 0, last = performance.now();
-    function tick(now){
-      requestAnimationFrame(tick);
-      if (document.getElementById('screen-setup').hidden){ last = now; return; }
-      const dt = Math.min(0.05, (now - last)/1000); last = now;
-      angle += 0.003;
-      // aimed low so the pair sits in the upper half, clear of the menu card
-      camera.position.set(Math.sin(angle)*3.9, 1.5, Math.cos(angle)*3.9);
-      camera.lookAt(0, 0.1, 0);
-      // the two idols keep facing whoever is looking, and wave now and then
-      p1.faceTowards(camera.position.x - p1.group.position.x, camera.position.z - p1.group.position.z);
-      p2.faceTowards(camera.position.x - p2.group.position.x, camera.position.z - p2.group.position.z);
-      const wave = Math.sin(now/900) > 0.3;
-      p1.setPose(wave ? 'cheer' : 'idle');
-      p2.setPose(wave ? 'idle' : 'cheer');
-      p1.tickAnim(now, dt);
-      p2.tickAnim(now, dt);
-      renderer.render(scene, camera);
-    }
-    requestAnimationFrame(tick);
-    window.addEventListener('resize', () => {
-      if (document.getElementById('screen-setup').hidden) return;
-      W = window.innerWidth; H = window.innerHeight;
-      camera.aspect = W/H; camera.updateProjectionMatrix();
-      renderer.setSize(W,H);
-    });
-  })();
-</script>
-
-<script>
   // ================= Main 3D scene: board, characters, sticks, camera =================
-  const board3d = (function(){
+  function initBoard3d(makeCharacter){
     const container = document.getElementById('board-stage3d');
     let W = window.innerWidth, H = window.innerHeight;
 
@@ -825,10 +808,18 @@
       renderer.setSize(W,H);
     });
 
-    scene.add(new THREE.AmbientLight(0xffe9c7,0.6));
-    const sun = new THREE.DirectionalLight(0xfff3d6,0.85);
+    // three r155+ treats light intensity physically, so these are much higher
+    // than the pre-r155 values that produced the same brightness
+    scene.add(new THREE.AmbientLight(0xffe9c7, 2.0));
+    const sun = new THREE.DirectionalLight(0xfff3d6, 2.6);
     sun.position.set(4,9,6); sun.castShadow = true; sun.shadow.mapSize.set(1024,1024);
+    sun.shadow.camera.left = -12; sun.shadow.camera.right = 12;
+    sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -12;
     scene.add(sun);
+    // soft fill from the camera side so faces never go flat black
+    const fill = new THREE.DirectionalLight(0xdff0ff, 0.9);
+    fill.position.set(-3, 4, 9);
+    scene.add(fill);
 
     const table = new THREE.Mesh(new THREE.CircleGeometry(11,48), new THREE.MeshStandardMaterial({ color:0x0e3c2f, roughness:0.95 }));
     table.rotation.x = -Math.PI/2; table.receiveShadow = true; scene.add(table);
@@ -892,7 +883,7 @@
     function finishPos(owner, idx){ return [-(4+1.5+owner*1.3), -(4-idx*1.1)]; }
     for (let owner=0; owner<2; owner++){
       for (let idx=0; idx<2; idx++){
-        const c = buildAnimeCharacter(CHARACTER_DESIGNS[owner], idx);
+        const c = makeCharacter(owner, idx);
         const [x,z] = benchPos(owner, idx);
         c.group.position.set(x,0,z);
         scene.add(c.group);
@@ -949,6 +940,34 @@
       return avg;
     }
     function toOverview(){ return tweenCamera(OVERVIEW_POS, OVERVIEW_LOOK, 850); }
+
+    // ---- title mode: slow orbit around the line-up while the menu is up ----
+    let titleMode = true, titleAngle = 0;
+    function titleCenter(){
+      const c = new THREE.Vector3();
+      pieceMeshes.forEach(p => c.add(p.group.position));
+      if (pieceMeshes.length) c.divideScalar(pieceMeshes.length);
+      return c;
+    }
+    function updateTitleCamera(now, dt){
+      titleAngle += dt * 0.16;
+      const c = titleCenter();
+      // aimed low so the line-up sits in the upper half, clear of the menu card
+      camera.position.set(c.x + Math.sin(titleAngle)*3.4, 1.7, c.z + Math.cos(titleAngle)*3.4);
+      lookAt.set(c.x, 0.15, c.z);
+      camera.lookAt(lookAt);
+      const wave = Math.sin(now/1100) > 0.25;
+      pieceMeshes.forEach((p,i) => {
+        p.setPose((i % 2 === 0) === wave ? 'cheer' : 'idle');
+        p.setExpression('happy');
+      });
+    }
+    function exitTitleMode(){
+      if (!titleMode) return Promise.resolve();
+      titleMode = false;
+      pieceMeshes.forEach(p => { p.setPose('idle'); p.setExpression('neutral'); });
+      return toOverview();
+    }
     function focusOnPlayer(owner){
       const p = focusPoint(owner);
       const dir = owner===0 ? 1 : -1;
@@ -1104,11 +1123,12 @@
       requestAnimationFrame(tick);
       const dt = Math.min(0.05, (now - lastFrame)/1000);
       lastFrame = now;
+      if (titleMode) updateTitleCamera(now, dt);
       // idols always turn to face whoever is watching, unless they're walking
       pieceMeshes.forEach(p => {
         if (!p.walking) p.faceTowards(camera.position.x - p.group.position.x, camera.position.z - p.group.position.z);
       });
-      applyBickerJitter(now);
+      if (!titleMode) applyBickerJitter(now);
       pieceMeshes.forEach(p => p.tickAnim(now, dt));
       for (let i=animations.length-1; i>=0; i--){
         const a = animations[i];
@@ -1123,8 +1143,9 @@
     return {
       pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, toOverview,
       screenPosFor, movePiece, focusPoint, throwSticksNear, hideSticks, restackSlot,
+      exitTitleMode, camera,
     };
-  })();
+  }
 </script>
 
 <script>
@@ -1156,6 +1177,7 @@
     renderPlayerBar();
     renderHistory();
     showScreen('game');
+    board3d.exitTitleMode();
     startBGM();
   }
 
@@ -1293,4 +1315,200 @@
     renderPlayerBar();
     btn.disabled = false;
   }
+</script>
+
+<script type="module">
+  // ================= Bootstrap: load the VRM idols, then start =================
+  // The two characters are VRoid official sample models whose embedded VRM
+  // license allows redistribution and modification (see docs/models/README.md).
+  // Poses drive the VRM humanoid bones; emotions drive the VRM expression
+  // presets. If the .vrm files can't be fetched (e.g. inside a Claude Artifact,
+  // whose CSP blocks non-script requests) we fall back to the built-in
+  // hand-modelled characters so the game still runs.
+  import * as THREE from 'three';
+  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+  import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+
+  window.THREE = THREE;
+
+  const MODEL_URLS = ['./models/shino.vrm', './models/vivi.vrm'];
+  const TARGET_HEIGHT = 1.5;
+
+  const loadingEl = document.getElementById('loading');
+  const pctEl = document.getElementById('loading-pct');
+  function setProgress(frac){ pctEl.textContent = Math.round(frac*100) + '%'; }
+
+  // ---- VRM → the same character API the game already speaks ----
+  // three-vrm's normalized humanoid rest pose is a T-pose, and Euler order
+  // makes "lower the arm, then swing it" ambiguous, so poses are described as
+  // parameters and composed into quaternions instead:
+  //   armDown  how far the arm is brought down from horizontal (1.3 ≈ at the side)
+  //   armSwing forward(−) / backward(+) swing once it's down
+  //   elbow    elbow bend, torso/head  forward(+) lean
+  const AX_X = new THREE.Vector3(1,0,0);
+  const AX_Y = new THREE.Vector3(0,1,0);
+  const AX_Z = new THREE.Vector3(0,0,1);
+  const qA = new THREE.Quaternion(), qB = new THREE.Quaternion(), qT = new THREE.Quaternion();
+
+  function armQuat(out, side, down, swing){
+    qA.setFromAxisAngle(AX_Z, down * side);    // side: +1 = left arm, -1 = right
+    qB.setFromAxisAngle(AX_X, swing);
+    return out.copy(qB).multiply(qA);
+  }
+  function slerpBone(bone, target, k){ if (bone) bone.quaternion.slerp(target, k); }
+
+  const VRM_POSES = {
+    idle:    { armDown: 1.3,  armSwing: 0.05, elbow: 0.30, torso: 0.00, head: 0.00 },
+    windup:  { armDown: 1.0,  armSwing: 2.30, elbow: 0.80, torso:-0.14, head:-0.12 },
+    release: { armDown: 1.0,  armSwing:-1.50, elbow: 0.15, torso: 0.24, head: 0.12 },
+    cheer:   { armDown:-0.70, armSwing:-0.20, elbow: 0.30, torso:-0.06, head:-0.12 },
+    droop:   { armDown: 1.40, armSwing: 0.15, elbow: 0.12, torso: 0.20, head: 0.30 },
+  };
+  // VRM standard expression presets; VRM 0.x joy/sorrow/fun are mapped onto
+  // happy/sad/relaxed by three-vrm, so these names work for both spec versions.
+  const VRM_EXPRESSIONS = {
+    neutral: {},
+    happy:   { happy: 1.0 },
+    excited: { happy: 1.0, aa: 0.4 },
+    sad:     { sad: 1.0 },
+    shock:   { surprised: 1.0, oh: 0.5, sad: 0.25 },
+  };
+  const EXPRESSION_KEYS = ['happy','sad','angry','relaxed','surprised','aa','oh','ih','ee','ou'];
+
+  function wrapVrm(vrm){
+    const group = new THREE.Group();
+    group.add(vrm.scene);
+
+    // normalise height so both idols read as the same scale on the board
+    const box = new THREE.Box3().setFromObject(vrm.scene);
+    const h = box.max.y - box.min.y;
+    if (h > 0.1) vrm.scene.scale.setScalar(TARGET_HEIGHT / h);
+
+    const bone = n => vrm.humanoid.getNormalizedBoneNode(n);
+    const joints = {
+      torso: bone('spine'), head: bone('head'),
+      shoulderL: bone('leftUpperArm'), shoulderR: bone('rightUpperArm'),
+      elbowL: bone('leftLowerArm'), elbowR: bone('rightLowerArm'),
+      hipL: bone('leftUpperLeg'), hipR: bone('rightUpperLeg'),
+      kneeL: bone('leftLowerLeg'), kneeR: bone('rightLowerLeg'),
+    };
+
+    let nextBlink = 1 + Math.random()*4;
+    let blinkT = -1;
+
+    return {
+      group, joints, vrm,
+      pose: VRM_POSES.idle,
+      walking: false, walkPhase: 0, facing: 0,
+
+      setPose(name){ this.pose = VRM_POSES[name] || VRM_POSES.idle; },
+      faceTowards(dx, dz){
+        if (Math.abs(dx) < 1e-4 && Math.abs(dz) < 1e-4) return;
+        this.facing = Math.atan2(dx, dz);
+      },
+      setExpression(name){
+        const m = vrm.expressionManager;
+        if (!m) return;
+        EXPRESSION_KEYS.forEach(k => { try { m.setValue(k, 0); } catch (e) {} });
+        const set = VRM_EXPRESSIONS[name] || {};
+        for (const k in set){ try { m.setValue(k, set[k]); } catch (e) {} }
+      },
+      setLookAtTarget(target){ if (vrm.lookAt) vrm.lookAt.target = target; },
+
+      tickAnim(now, dt){
+        const k = Math.min(1, dt * 11);
+        const p = this.pose;
+        let swingL = p.armSwing, swingR = p.armSwing;
+        let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0;
+
+        if (this.walking){
+          this.walkPhase += dt * 9;
+          const w = this.walkPhase;
+          hipL = -Math.sin(w) * 0.5;  hipR = Math.sin(w) * 0.5;
+          kneeL = Math.max(0, Math.sin(w)) * 0.7;
+          kneeR = Math.max(0, -Math.sin(w)) * 0.7;
+          swingL = Math.sin(w) * 0.35; swingR = -Math.sin(w) * 0.35;
+          vrm.scene.position.y = Math.abs(Math.sin(w)) * 0.035;
+        } else {
+          vrm.scene.position.y = Math.sin(now/620) * 0.012;
+        }
+
+        slerpBone(joints.shoulderL, armQuat(qT, 1, p.armDown, swingL), k);
+        slerpBone(joints.shoulderR, armQuat(qT, -1, p.armDown, swingR), k);
+        slerpBone(joints.elbowL, qT.setFromAxisAngle(AX_Y, -p.elbow), k);
+        slerpBone(joints.elbowR, qT.setFromAxisAngle(AX_Y, p.elbow), k);
+        slerpBone(joints.hipL, qT.setFromAxisAngle(AX_X, hipL), k);
+        slerpBone(joints.hipR, qT.setFromAxisAngle(AX_X, hipR), k);
+        slerpBone(joints.kneeL, qT.setFromAxisAngle(AX_X, kneeL), k);
+        slerpBone(joints.kneeR, qT.setFromAxisAngle(AX_X, kneeR), k);
+        slerpBone(joints.torso, qT.setFromAxisAngle(AX_X, p.torso), k);
+        slerpBone(joints.head, qT.setFromAxisAngle(AX_X, p.head), k);
+
+        // idle blinking
+        nextBlink -= dt;
+        if (blinkT >= 0){
+          blinkT += dt;
+          const v = blinkT < 0.06 ? blinkT/0.06 : Math.max(0, 1 - (blinkT-0.06)/0.1);
+          try { vrm.expressionManager && vrm.expressionManager.setValue('blink', v); } catch (e) {}
+          if (blinkT > 0.18){ blinkT = -1; try { vrm.expressionManager.setValue('blink', 0); } catch (e) {} }
+        } else if (nextBlink <= 0){
+          blinkT = 0;
+          nextBlink = 2 + Math.random()*4;
+        }
+
+        let d = this.facing - group.rotation.y;
+        while (d > Math.PI) d -= Math.PI*2;
+        while (d < -Math.PI) d += Math.PI*2;
+        group.rotation.y += d * Math.min(1, dt * 8);
+
+        vrm.update(dt);
+      },
+    };
+  }
+
+  async function loadIdols(){
+    const loader = new GLTFLoader();
+    loader.register(parser => new VRMLoaderPlugin(parser));
+
+    const perOwner = [];
+    let done = 0;
+    for (let owner = 0; owner < 2; owner++){
+      const instances = [];
+      for (let idx = 0; idx < 2; idx++){
+        const gltf = await loader.loadAsync(MODEL_URLS[owner], evt => {
+          if (evt.total) setProgress((done + evt.loaded/evt.total) / 4);
+        });
+        const vrm = gltf.userData.vrm;
+        if (!vrm) throw new Error('not a VRM: ' + MODEL_URLS[owner]);
+        if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
+        if (VRMUtils.combineSkeletons) VRMUtils.combineSkeletons(gltf.scene);
+        if (VRMUtils.rotateVRM0) VRMUtils.rotateVRM0(vrm);   // VRM 0.x faces -Z otherwise
+        vrm.scene.traverse(o => {
+          o.frustumCulled = false;
+          if (o.isMesh) o.castShadow = true;
+        });
+        instances.push(wrapVrm(vrm));
+        done++;
+        setProgress(done / 4);
+      }
+      perOwner.push(instances);
+    }
+    return perOwner;
+  }
+
+  let makeCharacter;
+  try {
+    const idols = await loadIdols();
+    makeCharacter = (owner, idx) => idols[owner][idx];
+    console.log('VRM idols loaded');
+  } catch (err) {
+    console.warn('VRM load failed — using the built-in characters instead.', err);
+    makeCharacter = (owner, idx) => buildAnimeCharacter(CHARACTER_DESIGNS[owner], idx);
+  }
+
+  window.board3d = initBoard3d(makeCharacter);
+  board3d.pieceMeshes.forEach(p => p.setLookAtTarget && p.setLookAtTarget(board3d.camera));
+
+  loadingEl.classList.add('done');
+  setTimeout(() => { loadingEl.hidden = true; }, 600);
 </script>
