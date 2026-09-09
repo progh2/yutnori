@@ -122,6 +122,113 @@
   }
   footer a{ color: var(--gold); }
 
+  [hidden]{ display: none !important; }
+
+  #screen-setup, #screen-game{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .setup-card{
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.12)), var(--felt);
+    border: 3px solid rgba(251,241,217,.18);
+    border-radius: 28px;
+    padding: 30px 26px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+  .setup-card .ask{
+    font-family: "Jua", sans-serif;
+    font-size: 18px;
+    text-align: center;
+  }
+  .choices{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    width: 100%;
+  }
+  .choice{
+    background: rgba(251,241,217,.06);
+    border: 2px solid rgba(251,241,217,.2);
+    border-radius: 18px;
+    padding: 16px 10px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: "Jua", sans-serif;
+    color: var(--ink-light);
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .choice:hover, .choice:focus-visible{
+    transform: translateY(-3px);
+    border-color: var(--gold);
+    background: rgba(242,177,52,.12);
+    outline: none;
+  }
+  .choice .vs{ font-size: 30px; line-height:1; }
+  .choice .label{ font-size: 14px; }
+  .choice .tag{ font-size: 11px; color: var(--ink-muted); }
+
+  .spectator-banner{
+    font-family: "Jua", sans-serif;
+    background: rgba(224,71,58,.16);
+    border: 1.5px dashed var(--red);
+    color: var(--red-ink);
+    border-radius: 14px;
+    padding: 10px 16px;
+    font-size: 13px;
+    text-align: center;
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .player-bar{
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .player-badge{
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(251,241,217,.08);
+    border: 2px solid rgba(251,241,217,.22);
+    border-radius: 999px;
+    padding: 6px 14px 6px 8px;
+    font-family: "Jua", sans-serif;
+    font-size: 13px;
+  }
+  .player-badge .avatar{
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    background: var(--cream);
+  }
+  .player-badge.human .avatar{ background: var(--gold); }
+  .player-badge.bot .avatar{ background: var(--line-dim); }
+  .vs-divider{ font-family:"Jua",sans-serif; color: var(--ink-muted); font-size: 13px; }
+
+  .reset-link{
+    background: none; border: none; cursor: pointer;
+    font-family: "Jua", sans-serif;
+    color: var(--ink-muted);
+    font-size: 12.5px;
+    text-decoration: underline;
+    padding: 2px 4px;
+  }
+  .reset-link:hover{ color: var(--gold); }
+
   @media (prefers-reduced-motion: no-preference){
     .pulse{ animation: pulse 2.4s ease-in-out infinite; }
     @keyframes pulse{
@@ -132,24 +239,96 @@
 </style>
 
 <div class="wrap">
-  <div class="stagebar"><span class="pill">STAGE 1 / 9</span><span>윷말판 렌더링</span></div>
+  <div class="stagebar"><span class="pill">STAGE 2 / 9</span><span>플레이어 설정</span></div>
   <h1>🎴 사이버 윷놀이</h1>
-  <p class="sub">전통 윷판 — 출발점(붉은 칸)에서 시계 반대 방향으로 돌아 다시 출발점으로!</p>
 
-  <div class="board-card">
-    <svg id="board" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"></svg>
-  </div>
+  <section id="screen-setup">
+    <p class="sub">시작하기 전에, 오늘 대결은 누가누가 할까요?</p>
+    <div class="setup-card">
+      <p class="ask">참가자 2명 중 <strong>사람은 몇 명</strong>인가요?</p>
+      <div class="choices">
+        <button class="choice" onclick="choosePlayers(0)">
+          <span class="vs">🤖 vs 🤖</span>
+          <span class="label">0명</span>
+          <span class="tag">봇끼리 관전</span>
+        </button>
+        <button class="choice" onclick="choosePlayers(1)">
+          <span class="vs">🧑 vs 🤖</span>
+          <span class="label">1명</span>
+          <span class="tag">혼자 도전</span>
+        </button>
+        <button class="choice" onclick="choosePlayers(2)">
+          <span class="vs">🧑 vs 🧑</span>
+          <span class="label">2명</span>
+          <span class="tag">같이 플레이</span>
+        </button>
+      </div>
+    </div>
+  </section>
 
-  <div class="legend">
-    <span class="item"><span class="swatch start"></span>출발점 (0번)</span>
-    <span class="item"><span class="swatch plain"></span>일반 칸</span>
-    <span class="item"><span class="swatch corner"></span>꼭짓점 (지름길 입구)</span>
-    <span class="item"><span class="line-sample"></span>지름길 경로</span>
-    <span class="item"><span class="swatch center"></span>중앙 (교차점)</span>
-  </div>
+  <section id="screen-game" hidden>
+    <div class="player-bar" id="player-bar"></div>
+    <div class="spectator-banner" id="spectator-banner" hidden>
+      👀 관전 모드 — 두 봇이 자동으로 턴을 주고받습니다. (자동 진행 로직은 8단계에서 구현 예정)
+    </div>
+    <p class="sub">전통 윷판 — 출발점(붉은 칸)에서 시계 반대 방향으로 돌아 다시 출발점으로!</p>
 
-  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 1</footer>
+    <div class="board-card">
+      <svg id="board" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="item"><span class="swatch start"></span>출발점 (0번)</span>
+      <span class="item"><span class="swatch plain"></span>일반 칸</span>
+      <span class="item"><span class="swatch corner"></span>꼭짓점 (지름길 입구)</span>
+      <span class="item"><span class="line-sample"></span>지름길 경로</span>
+      <span class="item"><span class="swatch center"></span>중앙 (교차점)</span>
+    </div>
+
+    <button class="reset-link" onclick="showScreen('setup')">← 참가자 다시 선택하기</button>
+  </section>
+
+  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 2</footer>
 </div>
+
+<script>
+  const state = { players: null };
+
+  function showScreen(name){
+    document.getElementById('screen-setup').hidden = name !== 'setup';
+    document.getElementById('screen-game').hidden = name !== 'game';
+  }
+
+  function choosePlayers(humanCount){
+    const types = humanCount === 2 ? ['human','human']
+                : humanCount === 1 ? ['human','bot']
+                : ['bot','bot'];
+    state.players = types.map((type, i) => ({ id: i, type, name: 'P' + (i + 1) }));
+    renderPlayerBar();
+    showScreen('game');
+  }
+
+  function renderPlayerBar(){
+    const bar = document.getElementById('player-bar');
+    bar.innerHTML = '';
+    state.players.forEach((p, i) => {
+      if (i > 0){
+        const vs = document.createElement('span');
+        vs.className = 'vs-divider';
+        vs.textContent = 'vs';
+        bar.appendChild(vs);
+      }
+      const badge = document.createElement('span');
+      badge.className = 'player-badge ' + p.type;
+      badge.innerHTML =
+        '<span class="avatar">' + (p.type === 'human' ? '🧑' : '🤖') + '</span>' +
+        '<span>' + p.name + ' · ' + (p.type === 'human' ? '사람' : '봇') + '</span>';
+      bar.appendChild(badge);
+    });
+    const allBots = state.players.every(p => p.type === 'bot');
+    document.getElementById('spectator-banner').hidden = !allBots;
+  }
+</script>
 
 <script>
 (function(){
