@@ -1,6 +1,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>사이버 윷놀이</title>
+<title>별밭 윷놀이 — 북극성과 28수의 밭에서</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
   :root{
@@ -181,6 +181,10 @@
     font-family:"Black Han Sans","Noto Sans KR",sans-serif; font-size: clamp(24px,5vw,34px);
     text-align:center; text-shadow: 0 2px 0 rgba(0,0,0,.3);
   }
+  .setup-card .tagline{
+    font-family:"Jua",sans-serif; font-size:12.5px; color:var(--ink-muted);
+    margin:-10px 0 0; text-align:center;
+  }
   .setup-card .ask{ font-family:"Jua",sans-serif; font-size:15px; text-align:center; }
   .choices{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; width:100%; }
   .choice{
@@ -290,6 +294,58 @@
     .impact.go .impact-text{ transform: scale(1); }
   }
 
+  .bot-thinking{
+    position:fixed; left:50%; top:112px; transform:translateX(-50%);
+    font-family:"Jua",sans-serif; font-size:13px; color:var(--ink-light);
+    background:var(--glass); backdrop-filter:blur(6px);
+    border:1px solid rgba(251,241,217,.24); border-radius:999px;
+    padding:6px 14px; z-index:12;
+  }
+
+  /* ---- win / lose ---- */
+  .gameover{
+    position:fixed; inset:0; z-index:25;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(6,26,20,.72); backdrop-filter:blur(3px);
+    opacity:0; transition:opacity .45s ease;
+  }
+  .gameover.go{ opacity:1; }
+  .go-panel{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    text-align:center;
+  }
+  .go-win{
+    font-family:"Black Han Sans",sans-serif;
+    font-size:clamp(64px,14vw,150px); line-height:1;
+    color:#fff3cf; -webkit-text-stroke:6px #3a2107; paint-order:stroke fill;
+    text-shadow:0 8px 0 rgba(58,33,7,.5), 0 0 60px rgba(255,217,138,.9);
+    transform:scale(.4);
+  }
+  .gameover.go .go-win{ animation:go-pop .8s cubic-bezier(.16,1.4,.3,1) forwards; }
+  @keyframes go-pop{ 0%{transform:scale(.4) rotate(-8deg);} 55%{transform:scale(1.12) rotate(2deg);} 100%{transform:scale(1);} }
+  .go-lose{
+    font-family:"Black Han Sans",sans-serif;
+    font-size:clamp(30px,6vw,62px); line-height:1; margin-top:14px;
+    color:#9fb4ad; -webkit-text-stroke:4px #16302a; paint-order:stroke fill;
+    opacity:0;
+  }
+  .gameover.go .go-lose{ animation:go-fade .6s ease-out .45s forwards; }
+  @keyframes go-fade{ to{ opacity:1; } }
+  .go-name{ font-family:"Jua",sans-serif; font-size:16px; color:#ffe6a8; }
+  .go-name.lose{ color:#9fb4ad; font-size:14px; opacity:0; }
+  .gameover.go .go-name.lose{ animation:go-fade .6s ease-out .55s forwards; }
+  .go-vs{ font-family:"Jua",sans-serif; font-size:12px; color:rgba(253,246,227,.5); margin-top:10px; }
+  .go-again{
+    margin-top:24px; font-family:"Jua",sans-serif; font-size:16px;
+    color:var(--gold-ink); background:var(--gold); border:none;
+    border-radius:999px; padding:12px 30px; cursor:pointer;
+    box-shadow:0 6px 0 #b8791a, 0 8px 16px -4px rgba(0,0,0,.4);
+  }
+  .go-again:hover{ transform:translateY(-2px); }
+  @media (prefers-reduced-motion: reduce){
+    .gameover.go .go-win, .gameover.go .go-lose, .gameover.go .go-name.lose{ animation:none; opacity:1; transform:none; }
+  }
+
   .loading{
     position:fixed; inset:0; z-index:30;
     display:flex; align-items:center; justify-content:center;
@@ -334,7 +390,8 @@
 <section id="screen-setup">
   <div class="hud">
     <div class="setup-card">
-      <div class="title">🎴 사이버 윷놀이</div>
+      <div class="title">✨ 별밭 윷놀이</div>
+      <p class="tagline">북극성과 28수의 밭에서, 오늘도 한 바퀴</p>
       <p class="ask">참가자 2명 중 <strong>사람은 몇 명</strong>인가요?</p>
       <div class="choices">
         <button class="choice" onclick="playClick(); choosePlayers(0)">
@@ -354,7 +411,7 @@
 <section id="screen-game" hidden>
   <div class="hud">
     <div class="hud-top">
-      <div class="brand"><h1>🎴 사이버 윷놀이</h1></div>
+      <div class="brand"><h1>✨ 별밭 윷놀이</h1></div>
       <div class="stagebar"><span class="pill">STAGE 5 / 9</span><span>3D 카메라 연출</span></div>
       <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기">🔊</button>
     </div>
@@ -382,6 +439,7 @@
       </div>
     </div>
   </div>
+  <div class="bot-thinking" id="bot-thinking" hidden>🤖 생각 중…</div>
   <div class="reaction-bubble" id="reaction-bubble"></div>
   <div class="shortcut-prompt" id="shortcut-prompt" hidden>
     <span>🔀 꼭짓점 도착! 중앙 지름길로 갈까요?</span>
@@ -392,7 +450,18 @@
   </div>
 </section>
 
-<footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 5</footer>
+<div class="gameover" id="gameover" hidden>
+  <div class="go-panel">
+    <div class="go-win">WIN</div>
+    <div class="go-name" id="go-win-name"></div>
+    <div class="go-vs">— 완주 —</div>
+    <div class="go-lose">LOSE</div>
+    <div class="go-name lose" id="go-lose-name"></div>
+    <button class="go-again" onclick="playClick(); restartGame()">한 판 더!</button>
+  </div>
+</div>
+
+<footer>별밭 윷놀이 ·<a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 5</footer>
 
 <script>
   // ================= Yut throw model (plan.md 4.2) =================
@@ -451,7 +520,7 @@
   // Names run 도·개·걸·윷·모 → 뒷… → 찌… → 날… → 참먹이, and every arm of the
   // cross has its own two names (모도/모개 …). Crossing 방 always bends toward
   // 참먹이, which is what makes the 11-step route possible.
-  const RING_R = 4.6;
+  const RING_R = 6.4;
   const RING_N = 20;
 
   function ringPos(i){
@@ -596,6 +665,13 @@
   function playHop(){ playTone(520,{type:'square',gain:0.08,decay:0.06}); }
   function playClick(){ playTone(300,{type:'square',gain:0.05,decay:0.04}); }
   function playSad(){ playTone(300,{type:'sawtooth',gain:0.12,decay:0.18}); playTone(220,{type:'sawtooth',gain:0.12,decay:0.28,when:0.12}); }
+  function playFinishChime(){
+    [523.25, 659.25, 783.99].forEach((f,i) => playTone(f, { type:'triangle', gain:0.16, decay:0.4, when:i*0.09 }));
+  }
+  function playFanfare(){
+    [523.25, 659.25, 783.99, 1046.5].forEach((f,i) => playTone(f, { type:'triangle', gain:0.2, decay:0.5, when:i*0.14 }));
+    playTone(1318.5, { type:'triangle', gain:0.18, decay:1.0, when:0.6 });
+  }
   const BGM_NOTES = [392.0,440.0,523.25,587.33,659.25,587.33,523.25,440.0];
   function startBGM(){
     if (audio.bgmTimer || !audio.enabled) return;
@@ -958,7 +1034,7 @@
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a2e24);
-    scene.fog = new THREE.Fog(0x0a2e24, 14, 26);
+    scene.fog = new THREE.Fog(0x0a2e24, 20, 38);
     const camera = new THREE.PerspectiveCamera(46, W/H, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
@@ -976,16 +1052,16 @@
     // than the pre-r155 values that produced the same brightness
     scene.add(new THREE.AmbientLight(0xffe9c7, 2.0));
     const sun = new THREE.DirectionalLight(0xfff3d6, 2.6);
-    sun.position.set(4,9,6); sun.castShadow = true; sun.shadow.mapSize.set(1024,1024);
-    sun.shadow.camera.left = -12; sun.shadow.camera.right = 12;
-    sun.shadow.camera.top = 12; sun.shadow.camera.bottom = -12;
+    sun.position.set(6,13,8); sun.castShadow = true; sun.shadow.mapSize.set(1024,1024);
+    sun.shadow.camera.left = -16; sun.shadow.camera.right = 16;
+    sun.shadow.camera.top = 16; sun.shadow.camera.bottom = -16;
     scene.add(sun);
     // soft fill from the camera side so faces never go flat black
     const fill = new THREE.DirectionalLight(0xdff0ff, 0.9);
     fill.position.set(-3, 4, 9);
     scene.add(fill);
 
-    const table = new THREE.Mesh(new THREE.CircleGeometry(13,56), new THREE.MeshStandardMaterial({ color:0x0b2f26, roughness:0.95 }));
+    const table = new THREE.Mesh(new THREE.CircleGeometry(17,64), new THREE.MeshStandardMaterial({ color:0x0b2f26, roughness:0.95 }));
     table.rotation.x = -Math.PI/2; table.receiveShadow = true; scene.add(table);
 
     // ---- the four 밭, laid out as seasons (docs/yutpan.md) ----
@@ -1121,12 +1197,12 @@
       for (const L of labels){
         const dist = camera.position.distanceTo(L.pos);
         projected.copy(L.pos).project(camera);
-        const limit = L.field ? 26 : 12;
+        const limit = L.field ? 34 : 24;
         if (projected.z > 1 || dist > limit){ L.el.style.opacity = '0'; continue; }
         const x = rect.left + (projected.x*0.5 + 0.5) * rect.width;
         const y = rect.top + (-projected.y*0.5 + 0.5) * rect.height;
         L.el.style.transform = 'translate(-50%,-50%) translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
-        L.el.style.opacity = String(L.field ? 0.9 : Math.max(0, Math.min(1, (limit - dist) / 4)));
+        L.el.style.opacity = String(L.field ? 0.9 : Math.max(0.32, Math.min(1, (limit - dist) / 8)));
       }
     }
 
@@ -1134,8 +1210,8 @@
     const PLAYER_COLORS = [0xf2b134, 0xd94f8c];
     const pieceMeshes = [];
     // they wait in a row just outside 참먹이, and retire to the far side
-    function benchPos(owner, idx){ return [-2.4 + (owner*2 + idx)*1.6, RING_R + 1.6]; }
-    function finishPos(owner, idx){ return [-2.4 + (owner*2 + idx)*1.6, -(RING_R + 1.7)]; }
+    function benchPos(owner, idx){ return [-3.0 + (owner*2 + idx)*2.0, RING_R + 1.9]; }
+    function finishPos(owner, idx){ return [-3.0 + (owner*2 + idx)*2.0, -(RING_R + 2.0)]; }
     for (let owner=0; owner<2; owner++){
       for (let idx=0; idx<2; idx++){
         const c = makeCharacter(owner, idx);
@@ -1182,8 +1258,8 @@
       return new Promise(resolve => { animations.push({ start: performance.now(), duration, onUpdate, resolve }); });
     }
 
-    const OVERVIEW_POS = new THREE.Vector3(0, 14, 14);
-    const OVERVIEW_LOOK = new THREE.Vector3(0, 0, 0.6);
+    const OVERVIEW_POS = new THREE.Vector3(0, 18.5, 18.5);
+    const OVERVIEW_LOOK = new THREE.Vector3(0, 0, 0.8);
     let lookAt = OVERVIEW_LOOK.clone();
     camera.position.copy(OVERVIEW_POS);
     camera.lookAt(lookAt);
@@ -1278,6 +1354,14 @@
       const camPos = new THREE.Vector3(worldPos.x, worldPos.y + distance*0.55, worldPos.z + distance);
       return tweenCamera(camPos, worldPos.clone(), 550);
     }
+    // a medium shot of one character, used to watch her before she throws
+    function focusOnPiece(piece, dist){
+      const d = dist === undefined ? 3.0 : dist;
+      const p = piece.group.position;
+      const yaw = piece.group.rotation.y;
+      const camPos = new THREE.Vector3(p.x + Math.sin(yaw)*d, 1.9, p.z + Math.cos(yaw)*d);
+      return tweenCamera(camPos, new THREE.Vector3(p.x, 0.85, p.z), 700);
+    }
     // tight on the face, so the reaction actually reads
     function focusOnFace(piece){
       const head = new THREE.Vector3();
@@ -1297,7 +1381,7 @@
     // scripted camera framing currently is, so free-look and the cinematic
     // tweens never fight each other) ----
     const spherical = new THREE.Spherical();
-    const MIN_DIST = 1.1, MAX_DIST = 26;
+    const MIN_DIST = 1.1, MAX_DIST = 34;
     let dragging = false, lastX=0, lastY=0;
     const pointers = new Map();
     let pinchDist = null;
@@ -1443,6 +1527,21 @@
       piece.faceTowards(0, 1); // settle facing the camera side
     }
 
+    // a captured piece trudges back to the bench
+    async function sendHome(piece, x, z){
+      const from = piece.group.position.clone();
+      const target = new THREE.Vector3(x, 0, z);
+      piece.walking = true;
+      piece.faceTowards(target.x - from.x, target.z - from.z);
+      await animate(700, t => {
+        piece.group.position.lerpVectors(from, target, easeInOutCubic(t));
+        piece.group.position.y = Math.sin(Math.PI*t) * 0.25;   // a small dejected hop
+      });
+      piece.group.position.set(x, 0, z);
+      piece.walking = false;
+      piece.stackOffset = [0,0];
+    }
+
     // ---- crowded squares: they shuffle and squabble at each other ----
     function applyBickerJitter(now){
       const bySlot = {};
@@ -1491,15 +1590,15 @@
 
     return {
       pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, focusOnFace,
-      toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear, hideSticks,
-      restackSlot, exitTitleMode, camera,
+      focusOnPiece, toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear,
+      hideSticks, restackSlot, exitTitleMode, camera, sendHome,
     };
   }
 </script>
 
 <script>
   // ================= Game state + turn flow =================
-  const state = { players:null, currentPlayerIndex:0, history:[], pieces:[] };
+  const state = { players:null, currentPlayerIndex:0, history:[], pieces:[], extraThrows:0, over:false, busy:false, gen:0 };
 
   function showScreen(name){
     document.getElementById('screen-setup').hidden = name !== 'setup';
@@ -1512,6 +1611,13 @@
     state.currentPlayerIndex = 0;
     state.history = [];
     state.pieces = [];
+    state.extraThrows = 0;
+    state.over = false;
+    state.busy = false;
+    state.gen = (state.gen || 0) + 1;   // in-flight turns from a previous game bail out
+    document.getElementById('gameover').hidden = true;
+    document.getElementById('gameover').classList.remove('go');
+    document.getElementById('throw-btn').disabled = false;
     for (let owner=0; owner<2; owner++) for (let idx=0; idx<2; idx++) state.pieces.push({ owner, idx, place:'start', nodeId:null });
     board3d.pieceMeshes.forEach(pm => {
       pm.slot = 'bench:'+pm.owner+':'+pm.idx;
@@ -1528,6 +1634,7 @@
     showScreen('game');
     board3d.exitTitleMode();
     startBGM();
+    maybeRunBot();
   }
 
   function renderPlayerBar(){
@@ -1553,13 +1660,6 @@
   }
   function renderHistory(){
     document.getElementById('throw-history').innerHTML = state.history.map(r => '<span class="history-chip">'+r+'</span>').join('');
-  }
-  function pickPieceToMove(owner, steps){
-    const mine = state.pieces.filter(p => p.owner===owner && p.place!=='finished');
-    if (mine.length===0) return null;
-    if (steps < 0){ const onboard = mine.filter(p => p.place==='onboard'); return onboard[0] || null; }
-    const onboard = mine.filter(p => p.place==='onboard');
-    return onboard[0] || mine[0];
   }
   function reactionEmojiFor(category){
     if (category==='mo' || category==='yut') return ['🤩','💃','🕺'][Math.floor(Math.random()*3)];
@@ -1612,7 +1712,129 @@
     setTimeout(() => stage.classList.remove('shake'), 420);
   }
 
-  function askShortcut(){
+  // ================= rules: 업기 · 잡기 · 추가 턴 · 승리 =================
+  // A "unit" is what actually moves. Own pieces standing on the same 밭 are
+  // 업힌 상태 by definition (plan.md 4.4), so a unit is simply every own piece
+  // sharing a node — no extra bookkeeping needed.
+  function piecesAt(nodeId, owner){
+    return state.pieces.filter(p => p.place === 'onboard' && p.nodeId === nodeId
+      && (owner === undefined || p.owner === owner));
+  }
+
+  // rough "how far along" score, only used to rank candidate moves
+  const PROGRESS = (() => {
+    const m = {};
+    for (let i = 1; i < RING_N; i++) m['o' + i] = i;
+    m['o0'] = 20;
+    m['mo-1'] = 6; m['mo-2'] = 7;
+    m['dm-1'] = 11; m['dm-2'] = 12;
+    m['sok-1'] = 16; m['sok-2'] = 17;
+    m['bang'] = 14; m['anjji'] = 17; m['saryeo'] = 18;
+    return m;
+  })();
+
+  function movableUnits(owner, steps){
+    const mine = state.pieces.filter(p => p.owner === owner && p.place !== 'finished');
+    const units = [];
+    const seen = new Set();
+    for (const p of mine){
+      if (p.place !== 'onboard') continue;
+      if (seen.has(p.nodeId)) continue;
+      seen.add(p.nodeId);
+      units.push({ rep: p, members: piecesAt(p.nodeId, owner), from: p.nodeId });
+    }
+    if (steps > 0){
+      const waiting = mine.filter(p => p.place === 'start');
+      if (waiting.length) units.push({ rep: waiting[0], members: [waiting[0]], from: 'o0' });
+    }
+    return units;
+  }
+
+  // 잡기 > 완주 > 업기 > 전진 — good enough to be sensible for both the
+  // auto-pick and the bot, without needing a piece-selection UI
+  function planMove(owner, steps, useShortcut){
+    let best = null;
+    for (const unit of movableUnits(owner, steps)){
+      const path = walkPath(unit.from, steps, useShortcut && !!SHORTCUT_ENTRY[unit.from], unit.rep.prevNodeId);
+      if (!path.length) continue;
+      const land = path[path.length - 1];
+      let score = 0;
+      if (land === 'FINISH'){
+        score += 120 * unit.members.length;
+      } else {
+        const foes = piecesAt(land).filter(p => p.owner !== owner);
+        const friends = piecesAt(land, owner).filter(p => unit.members.indexOf(p) === -1);
+        score += 80 * foes.length;
+        score += friends.length ? 18 : 0;
+        score += (PROGRESS[land] || 0) * 0.8;
+        if (unit.from === 'o0') score -= 4;      // launching is the fallback
+      }
+      if (!best || score > best.score) best = { unit, path, land, score };
+    }
+    return best;
+  }
+
+  function unitLabel(members){
+    return members.length > 1 ? (members.length + '개 업고') : '';
+  }
+
+  // sends every opponent piece on `nodeId` back to the bench
+  async function captureAt(nodeId, owner){
+    const foes = piecesAt(nodeId).filter(p => p.owner !== owner);
+    if (!foes.length) return 0;
+    playSad();
+    await Promise.all(foes.map(foe => {
+      foe.place = 'start';
+      foe.nodeId = null;
+      foe.prevNodeId = null;
+      const mesh = board3d.pieceMeshes.find(pm => pm.owner === foe.owner && pm.idx === foe.idx);
+      if (!mesh) return Promise.resolve();
+      mesh.setExpression('shock');
+      const [bx, bz] = board3d.benchPos(foe.owner, foe.idx);
+      mesh.slot = 'bench:' + foe.owner + ':' + foe.idx;
+      return board3d.sendHome(mesh, bx, bz);
+    }));
+    return foes.length;
+  }
+
+  function winnerOf(){
+    for (let o = 0; o < 2; o++){
+      const mine = state.pieces.filter(p => p.owner === o);
+      if (mine.length && mine.every(p => p.place === 'finished')) return o;
+    }
+    return -1;
+  }
+
+  function showGameOver(winner){
+    state.over = true;
+    const el = document.getElementById('gameover');
+    const winName = state.players[winner].name + ' ' +
+      board3d.pieceMeshes.filter(pm => pm.owner === winner).map(pm => pm.charName).join('·');
+    const loseName = state.players[1-winner].name + ' ' +
+      board3d.pieceMeshes.filter(pm => pm.owner === 1-winner).map(pm => pm.charName).join('·');
+    document.getElementById('go-win-name').textContent = winName;
+    document.getElementById('go-lose-name').textContent = loseName;
+    el.hidden = false;
+    void el.offsetWidth;
+    el.classList.add('go');
+    playFanfare();
+    // winners cheer, losers slump
+    board3d.pieceMeshes.forEach(pm => {
+      if (pm.owner === winner){ pm.setExpression('excited'); pm.setPose('cheer'); }
+      else { pm.setExpression('sad'); pm.setPose('droop'); }
+    });
+    board3d.toOverview();
+  }
+
+  function restartGame(){
+    document.getElementById('gameover').hidden = true;
+    document.getElementById('gameover').classList.remove('go');
+    choosePlayers(state.players.filter(p => p.type === 'human').length);
+  }
+
+  function askShortcut(owner){
+    // bots decide for themselves — cutting through 방 is nearly always right
+    if (state.players[owner].type === 'bot') return Promise.resolve(true);
     const el = document.getElementById('shortcut-prompt');
     el.hidden = false;
     return new Promise(resolve => {
@@ -1623,22 +1845,37 @@
     });
   }
 
+  function setBotThinking(on, text){
+    const el = document.getElementById('bot-thinking');
+    el.hidden = !on;
+    if (on) el.textContent = text || '🤖 생각 중…';
+  }
+
   async function takeTurn(){
+    if (state.busy || state.over) return;
+    state.busy = true;
+    const gen = state.gen;
+    const stale = () => gen !== state.gen;
     const btn = document.getElementById('throw-btn');
     btn.disabled = true;
     const owner = state.currentPlayerIndex;
-    // whoever would move on a normal roll is the one who throws, so the same
-    // character we zoom in on is usually the one that then walks
-    const likelyMover = pickPieceToMove(owner, 1);
-    const thrower = board3d.pieceMeshes.find(pm => pm.owner === owner && pm.idx === (likelyMover ? likelyMover.idx : 0))
+    const isBot = state.players[owner].type === 'bot';
+
+    // who throws: whoever a normal roll would move, so the character we watch
+    // is the one who then walks
+    const preview = planMove(owner, 1, false);
+    const leadPiece = preview ? preview.unit.rep : state.pieces.find(p => p.owner === owner);
+    const thrower = board3d.pieceMeshes.find(pm => pm.owner === owner && pm.idx === leadPiece.idx)
                  || board3d.pieceMeshes.find(pm => pm.owner === owner);
 
-    thrower.faceTowards(0, 1);
-    await board3d.focusOnPlayer(owner);
+    // ---- watch her first, then throw ----
+    await board3d.focusOnPiece(thrower, 3.0);
+    if (isBot) setBotThinking(true, '🤖 ' + thrower.charName + ' 생각 중…');
+    await wait(isBot ? 700 : 320);
+    setBotThinking(false);
 
-    // she winds up, throws, and the camera dives onto the sticks
     thrower.setPose('windup');
-    await wait(420);
+    await wait(430);
     playClack();
     const spot = thrower.group.position.clone().add(new THREE.Vector3(0, 1.15, 0.5));
     const revealFn = await board3d.throwSticksNear(spot);
@@ -1648,8 +1885,9 @@
     const outcome = rollYut();
     await revealFn(outcome.sticks);
     thrower.setPose('idle');
+    if (stale()){ board3d.hideSticks(); state.busy = false; return; }
 
-    await wait(350);
+    await wait(320);
     board3d.hideSticks();
 
     document.getElementById('result-name').textContent = outcome.result;
@@ -1664,39 +1902,92 @@
     state.history = state.history.slice(0,8);
     renderHistory();
 
-    const piece = pickPieceToMove(owner, outcome.steps);
-
-    // straight from the sticks onto her face, so the reaction lands close-up
+    // ---- back to her face for the reaction ----
     setPieceExpression(thrower, outcome.category);
     await board3d.focusOnFace(thrower);
     showReaction(thrower, reactionEmojiFor(outcome.category));
-    await wait(1100);
-    hideReaction();   // the camera is about to move, so let the bubble go first
+    await wait(1000);
+    hideReaction();
 
-    if (piece){
-      const pieceMesh = board3d.pieceMeshes.find(pm => pm.owner===piece.owner && pm.idx===piece.idx);
-      if (pieceMesh !== thrower) setPieceExpression(pieceMesh, outcome.category);
-      let useShortcut = false;
-      const fromId = piece.place==='onboard' ? piece.nodeId : 'o0';
-      if (piece.place==='onboard' && outcome.steps>0 && SHORTCUT_ENTRY[piece.nodeId]) useShortcut = await askShortcut();
-      const path = walkPath(fromId, outcome.steps, useShortcut, piece.prevNodeId);
-      // remember where she came from, so 빽도 can retrace it even out of 방
-      piece.prevNodeId = path.length > 1 ? path[path.length-2] : fromId;
-      piece.place = 'onboard';
-      await board3d.movePiece(pieceMesh, path, true);
-      const last = path[path.length-1];
-      if (last === 'FINISH') piece.place = 'finished'; else piece.nodeId = last;
-    } else {
-      await wait(500);
+    if (stale()){ state.busy = false; return; }
+
+    // ---- move ----
+    let captured = 0;
+    let plan = planMove(owner, outcome.steps, false);
+    if (plan && outcome.steps > 0 && SHORTCUT_ENTRY[plan.unit.from]){
+      const useShortcut = await askShortcut(owner);
+      if (useShortcut) plan = planMove(owner, outcome.steps, true) || plan;
     }
 
-    await wait(350);
-    board3d.pieceMeshes.filter(pm => pm.owner === owner).forEach(resetPieceExpression);
+    if (plan){
+      const { unit, path, land } = plan;
+      const meshes = unit.members.map(p =>
+        board3d.pieceMeshes.find(pm => pm.owner === p.owner && pm.idx === p.idx));
+      meshes.forEach(m => { if (m && m !== thrower) setPieceExpression(m, outcome.category); });
+
+      // the whole unit walks together; only the lead drags the camera along
+      await Promise.all(meshes.map((m, i) =>
+        m ? board3d.movePiece(m, path, i === 0) : Promise.resolve()));
+
+      unit.members.forEach(p => {
+        p.prevNodeId = path.length > 1 ? path[path.length-2] : unit.from;
+        p.place = land === 'FINISH' ? 'finished' : 'onboard';
+        p.nodeId = land === 'FINISH' ? null : land;
+      });
+      if (land === 'FINISH'){
+        playFinishChime();
+        meshes.forEach(m => { if (m){ m.setExpression('excited'); m.setPose('cheer'); } });
+      } else {
+        captured = await captureAt(land, owner);
+        if (captured) showImpact({ result:'잡았다!', steps:0, extraTurn:true, tone:'red' });
+      }
+    } else {
+      await wait(400);
+    }
+
+    await wait(captured ? 700 : 300);
+    state.pieces.filter(p => p.owner === owner && p.place !== 'finished').forEach(p => {
+      const m = board3d.pieceMeshes.find(pm => pm.owner === p.owner && pm.idx === p.idx);
+      if (m) resetPieceExpression(m);
+    });
+
+    if (stale()){ state.busy = false; return; }
+
+    // ---- 승리 판정 ----
+    const winner = winnerOf();
+    if (winner >= 0){
+      state.busy = false;
+      showGameOver(winner);
+      return;
+    }
+
+    // ---- 추가 턴: 윷·모 그리고 잡기 (plan.md 4.5) ----
+    let extra = 0;
+    if (outcome.extraTurn) extra++;
+    if (captured) extra++;
+    state.extraThrows = (state.extraThrows || 0) + extra;
+
+    if (state.extraThrows > 0){
+      state.extraThrows--;
+      setBotThinking(false);
+    } else {
+      state.currentPlayerIndex = 1 - owner;
+    }
+    renderPlayerBar();
     await board3d.toOverview();
 
-    state.currentPlayerIndex = 1-owner;
-    renderPlayerBar();
+    state.busy = false;
     btn.disabled = false;
+    maybeRunBot();
+  }
+
+  // ---- bots play themselves (plan.md 5.2 / stage 8) ----
+  function maybeRunBot(){
+    if (state.over || state.busy) return;
+    const p = state.players[state.currentPlayerIndex];
+    if (!p || p.type !== 'bot') return;
+    setBotThinking(true);
+    setTimeout(() => { setBotThinking(false); takeTurn(); }, 850);
   }
 </script>
 
