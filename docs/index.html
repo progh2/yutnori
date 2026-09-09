@@ -238,6 +238,25 @@
     width: 100%;
     max-width: 640px;
   }
+  .dice-stage{
+    width: 100%;
+    height: 190px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: radial-gradient(80% 100% at 50% 20%, #1c5c48 0%, #0c3428 100%);
+    box-shadow: inset 0 0 0 2px rgba(251,241,217,.12), inset 0 12px 26px -14px rgba(0,0,0,.6);
+    position: relative;
+  }
+  .dice-stage canvas{ display: block; width: 100%; height: 100%; }
+  .dice-hint{
+    position: absolute; left: 0; right: 0; bottom: 6px;
+    text-align: center;
+    font-family: "Jua", sans-serif;
+    font-size: 11px;
+    color: rgba(253,246,227,.55);
+    pointer-events: none;
+  }
+
   .throw-btn{
     font-family: "Jua", sans-serif;
     font-size: 17px;
@@ -319,7 +338,7 @@
 </style>
 
 <div class="wrap">
-  <div class="stagebar"><span class="pill">STAGE 3 / 9</span><span>턴 방식 윷 던지기</span></div>
+  <div class="stagebar"><span class="pill">STAGE 4 / 9</span><span>3D 윷 던지기 애니메이션</span></div>
   <h1>🎴 사이버 윷놀이</h1>
 
   <section id="screen-setup">
@@ -354,6 +373,9 @@
     <p class="sub">전통 윷판 — 출발점(붉은 칸)에서 시계 반대 방향으로 돌아 다시 출발점으로!</p>
 
     <div class="throw-area">
+      <div class="dice-stage" id="dice-stage">
+        <span class="dice-hint">🔴 붉은 띠 = 빽도 판정 윷가락 (혼자만 뒤집히면 빽도)</span>
+      </div>
       <button class="throw-btn" id="throw-btn" onclick="throwYut()">🥢 윷 던지기</button>
       <div class="result-card">
         <span class="result-name" id="result-name">?</span>
@@ -381,29 +403,44 @@
     </div>
   </section>
 
-  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 3</footer>
+  <footer>사이버 윷놀이 · <a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 4</footer>
 </div>
 
 <script>
   // ---- Yut throw model (plan.md 4.2) ----
-  // weight sums to 16; steps<0 is backdo, extraTurn grants another throw (used from stage 7 on)
-  const YUT_TABLE = [
-    { result: '빽도', steps: -1, extraTurn: false, weight: 1, tone: 'red' },
-    { result: '도',   steps:  1, extraTurn: false, weight: 3, tone: '' },
-    { result: '개',   steps:  2, extraTurn: false, weight: 6, tone: '' },
-    { result: '걸',   steps:  3, extraTurn: false, weight: 4, tone: '' },
-    { result: '윷',   steps:  4, extraTurn: true,  weight: 1, tone: 'jackpot' },
-    { result: '모',   steps:  5, extraTurn: true,  weight: 1, tone: 'jackpot' },
-  ];
-  const YUT_TOTAL_WEIGHT = YUT_TABLE.reduce((sum, r) => sum + r.weight, 0); // 16
+  // Four sticks, each independently flat-up("앞"/true) or round-up("뒤"/false) with
+  // equal probability. The category is the count of flat-up sticks, except the
+  // one-flat case: stick MARKED_STICK is a shorter/marked stick in a real yut set
+  // used to call 빽도 — if IT is the lone flat-up stick, that's 빽도, otherwise 도.
+  // This reproduces plan.md's weights exactly (도 3/16, 빽도 1/16, ...) while giving
+  // the 3D animation in this stage real per-stick states to render.
+  const MARKED_STICK = 0;
+  const CATEGORY_INFO = {
+    backdo: { result: '빽도', steps: -1, extraTurn: false, tone: 'red' },
+    do:     { result: '도',   steps:  1, extraTurn: false, tone: '' },
+    gae:    { result: '개',   steps:  2, extraTurn: false, tone: '' },
+    geol:   { result: '걸',   steps:  3, extraTurn: false, tone: '' },
+    yut:    { result: '윷',   steps:  4, extraTurn: true,  tone: 'jackpot' },
+    mo:     { result: '모',   steps:  5, extraTurn: true,  tone: 'jackpot' },
+  };
+
+  function rollSticks(){
+    return [0, 1, 2, 3].map(() => Math.random() < 0.5);
+  }
+
+  function classifySticks(sticks){
+    const flats = sticks.filter(Boolean).length;
+    if (flats === 0) return 'mo';
+    if (flats === 4) return 'yut';
+    if (flats === 2) return 'gae';
+    if (flats === 3) return 'geol';
+    return sticks[MARKED_STICK] ? 'backdo' : 'do'; // flats === 1
+  }
 
   function rollYut(){
-    let roll = Math.random() * YUT_TOTAL_WEIGHT;
-    for (const entry of YUT_TABLE){
-      roll -= entry.weight;
-      if (roll < 0) return entry;
-    }
-    return YUT_TABLE[YUT_TABLE.length - 1];
+    const sticks = rollSticks();
+    const category = classifySticks(sticks);
+    return Object.assign({ sticks, category }, CATEGORY_INFO[category]);
   }
 
   const state = { players: null, currentPlayerIndex: 0, history: [] };
@@ -454,8 +491,15 @@
       .join('');
   }
 
-  function throwYut(){
+  async function throwYut(){
+    const btn = document.getElementById('throw-btn');
+    btn.disabled = true;
+
     const outcome = rollYut();
+
+    // The 3D animation (next script block) settles each stick mesh into the exact
+    // flat/round pose in outcome.sticks, so what viewers see always matches the result.
+    if (window.playThrowAnimation) await window.playThrowAnimation(outcome.sticks);
 
     document.getElementById('result-name').textContent = outcome.result;
     document.getElementById('result-name').className = 'result-name' + (outcome.tone ? ' tone-' + outcome.tone : '');
@@ -471,22 +515,164 @@
     // throw simply passes to the other player so the turn-based flow is visible).
     state.currentPlayerIndex = 1 - state.currentPlayerIndex;
     renderPlayerBar();
+
+    btn.disabled = false;
   }
 
   function runProbabilityCheck(){
     const trials = 10000;
     const counts = {};
-    YUT_TABLE.forEach(e => counts[e.result] = 0);
-    for (let i = 0; i < trials; i++) counts[rollYut().result]++;
+    Object.keys(CATEGORY_INFO).forEach(k => counts[k] = 0);
+    for (let i = 0; i < trials; i++) counts[classifySticks(rollSticks())]++;
 
-    console.log('윷 던지기 확률 검증 (' + trials + '회 시행)');
-    console.table(YUT_TABLE.map(e => ({
-      결과: e.result,
-      기대확률: (e.weight / YUT_TOTAL_WEIGHT * 100).toFixed(2) + '%',
-      실측확률: (counts[e.result] / trials * 100).toFixed(2) + '%',
-      횟수: counts[e.result],
+    console.log('윷 던지기 확률 검증 (' + trials + '회 시행, 스틱 시뮬레이션 기반)');
+    const expected = { backdo: 1, do: 3, gae: 6, geol: 4, yut: 1, mo: 1 };
+    console.table(Object.keys(CATEGORY_INFO).map(k => ({
+      결과: CATEGORY_INFO[k].result,
+      기대확률: (expected[k] / 16 * 100).toFixed(2) + '%',
+      실측확률: (counts[k] / trials * 100).toFixed(2) + '%',
+      횟수: counts[k],
     })));
   }
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  const container = document.getElementById('dice-stage');
+  const W = container.clientWidth || 560, H = 190;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, W / H, 1, 2000);
+  camera.position.set(0, 260, 300);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(W, H);
+  renderer.shadowMap.enabled = true;
+  container.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffe9c7, 0.55));
+  const sun = new THREE.DirectionalLight(0xfff3d6, 0.9);
+  sun.position.set(120, 260, 160);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(512, 512);
+  scene.add(sun);
+
+  const floor = new THREE.Mesh(
+    new THREE.CircleGeometry(150, 40),
+    new THREE.MeshStandardMaterial({ color: 0x0e3c2f, roughness: 0.95 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+
+  // ---- Stick meshes: box with a cream "flat" face and a walnut "round" face ----
+  const STICK_LEN = 92, STICK_W = 15, STICK_H = 11;
+  function makeStickMaterials(){
+    const wood = new THREE.MeshStandardMaterial({ color: 0x8a5a34, roughness: 0.8 });
+    const flat = new THREE.MeshStandardMaterial({ color: 0xfbf1d9, roughness: 0.6 });
+    const round = new THREE.MeshStandardMaterial({ color: 0x6b4023, roughness: 0.85 });
+    // BoxGeometry face order: +x -x +y -y +z -z
+    return [wood, wood, flat, round, wood, wood];
+  }
+
+  const sticks = [0, 1, 2, 3].map((i) => {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(STICK_W, STICK_H, STICK_LEN),
+      makeStickMaterials()
+    );
+    mesh.castShadow = true;
+    if (i === MARKED_STICK){
+      const band = new THREE.Mesh(
+        new THREE.CylinderGeometry(STICK_W * 0.62, STICK_W * 0.62, STICK_H + 2, 16),
+        new THREE.MeshStandardMaterial({ color: 0xe0473a, roughness: 0.6 })
+      );
+      band.rotation.x = Math.PI / 2;
+      mesh.add(band);
+    }
+    scene.add(mesh);
+    return mesh;
+  });
+
+  const REST_SPOTS = [[-34, -18], [30, -20], [-28, 22], [32, 20]];
+
+  function poseIdle(){
+    sticks.forEach((mesh, i) => {
+      const [x, z] = REST_SPOTS[i];
+      mesh.position.set(x, STICK_H / 2, z);
+      mesh.rotation.set(0, (i * 0.6) % (Math.PI * 2), 0);
+    });
+    renderer.render(scene, camera);
+  }
+
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+  window.playThrowAnimation = function(sticksUp){
+    return new Promise((resolve) => {
+      const duration = 1300;
+      const start = performance.now();
+
+      const startState = sticks.map(() => ({
+        x: (Math.random() - 0.5) * 140,
+        z: (Math.random() - 0.5) * 60 - 20,
+        y: 90 + Math.random() * 40,
+        rx: Math.random() * Math.PI * 6,
+        ry: Math.random() * Math.PI * 2,
+        rz: Math.random() * Math.PI * 6,
+      }));
+
+      const endState = sticksUp.map((isFlat, i) => {
+        const [x, z] = REST_SPOTS[i];
+        return {
+          x, z, y: STICK_H / 2,
+          rx: isFlat ? 0 : Math.PI,
+          ry: Math.random() * Math.PI * 2,
+          rz: 0,
+          spinX: 3 + Math.floor(Math.random() * 2), // extra full tumbles before settling
+        };
+      });
+
+      function frame(now){
+        const t = Math.min(1, (now - start) / duration);
+        const ePos = easeOutCubic(t);
+        const eRot = easeOutCubic(Math.min(1, t * 1.15));
+
+        sticks.forEach((mesh, i) => {
+          const s = startState[i], e = endState[i];
+          // Bounce: a tossed-up arc that lands with one small secondary bounce.
+          const arc = Math.sin(Math.PI * Math.min(1, t * 1.05)) * (1 - ePos * 0.15);
+          mesh.position.x = THREE.MathUtils.lerp(s.x, e.x, ePos);
+          mesh.position.z = THREE.MathUtils.lerp(s.z, e.z, ePos);
+          mesh.position.y = e.y + arc * 70 * (1 - t * 0.4);
+
+          const spin = e.spinX * Math.PI * 2 * (1 - eRot);
+          mesh.rotation.x = e.rx + spin;
+          mesh.rotation.y = THREE.MathUtils.lerp(s.ry, e.ry, eRot);
+          mesh.rotation.z = THREE.MathUtils.lerp(s.rz, e.rz, eRot) * (1 - eRot);
+        });
+
+        renderer.render(scene, camera);
+
+        if (t < 1){
+          requestAnimationFrame(frame);
+        } else {
+          sticks.forEach((mesh, i) => {
+            const e = endState[i];
+            mesh.position.set(e.x, e.y, e.z);
+            mesh.rotation.set(e.rx, e.ry, 0);
+          });
+          renderer.render(scene, camera);
+          resolve();
+        }
+      }
+      requestAnimationFrame(frame);
+    });
+  };
+
+  poseIdle();
+})();
 </script>
 
 <script>
