@@ -218,6 +218,24 @@
     text-shadow:0 2px 5px rgba(0,0,0,.95);
   }
 
+  /* ---- character speech bubbles ---- */
+  .speech{ position:fixed; inset:0; pointer-events:none; z-index:6; }
+  .speech-bubble{
+    position:fixed; left:0; top:0; max-width:210px;
+    font-family:"Jua",sans-serif; font-size:13px; line-height:1.35;
+    color:#2a2018; background:#fdf6e3;
+    border:2px solid rgba(42,32,24,.18); border-radius:14px;
+    padding:8px 12px; text-align:center; white-space:pre-wrap;
+    box-shadow:0 6px 16px -6px rgba(0,0,0,.55);
+    opacity:0; transform-origin:50% 100%;
+    transition:opacity .18s ease;
+  }
+  .speech-bubble.show{ opacity:1; }
+  .speech-bubble::after{
+    content:''; position:absolute; left:50%; bottom:-9px; transform:translateX(-50%);
+    border:9px solid transparent; border-top-color:#fdf6e3; border-bottom:0;
+  }
+
   /* ---- throw result call-out ---- */
   .impact{
     position:fixed; inset:0; z-index:20;
@@ -370,6 +388,7 @@
 <!-- one 3D scene behind everything: the title screen and the game share it -->
 <div class="screen3d" id="board-stage3d"></div>
 <div class="labels" id="labels"></div>
+<div class="speech" id="speech"></div>
 
 <!-- fighting-game style call-out for the throw result -->
 <div class="impact" id="impact" aria-hidden="true">
@@ -412,7 +431,7 @@
   <div class="hud">
     <div class="hud-top">
       <div class="brand"><h1>✨ 별밭 윷놀이</h1></div>
-      <div class="stagebar"><span class="pill">STAGE 5 / 9</span><span>3D 카메라 연출</span></div>
+      <div class="stagebar"><span class="pill">STAGE 9 / 9</span><span>규칙 전체 구현</span></div>
       <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기">🔊</button>
     </div>
     <div class="hud-center-top">
@@ -420,7 +439,7 @@
     </div>
     <p class="hint-line">우클릭 드래그(터치는 한 손가락)로 시점 회전 · 휠/핀치로 확대·축소</p>
     <div class="spectator-banner" id="spectator-banner" hidden>
-      👀 관전 모드 — 자동 진행 로직은 8단계에서 구현 예정, 지금은 버튼으로 직접 진행합니다.
+      👀 관전 모드 — 봇 둘이 알아서 던지고 움직입니다. 편하게 지켜보세요.
     </div>
 
     <div class="hud-bottom">
@@ -461,7 +480,7 @@
   </div>
 </div>
 
-<footer>별밭 윷놀이 ·<a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · plan.md Stage 5</footer>
+<footer>별밭 윷놀이 ·<a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a> · <a href="https://github.com/progh2/yutnori/blob/main/docs/yutpan.md">윷판 29밭의 뜻</a></footer>
 
 <script>
   // ================= Yut throw model (plan.md 4.2) =================
@@ -660,21 +679,83 @@
     src.connect(filter).connect(g).connect(ctx.destination);
     src.start(t0);
   }
-  function playClack(){ [0,0.06,0.12,0.2].forEach((t,i) => playNoiseBurst({ when:t, duration:0.05, gain:0.22-i*0.02, filterFreq:1400+i*200 })); }
-  function playDing(){ playTone(880,{type:'triangle',gain:0.2,decay:0.25}); playTone(1318.5,{type:'triangle',gain:0.14,decay:0.3,when:0.05}); }
-  function playHop(){ playTone(520,{type:'square',gain:0.08,decay:0.06}); }
-  function playClick(){ playTone(300,{type:'square',gain:0.05,decay:0.04}); }
-  function playSad(){ playTone(300,{type:'sawtooth',gain:0.12,decay:0.18}); playTone(220,{type:'sawtooth',gain:0.12,decay:0.28,when:0.12}); }
+  // ---- recorded CC0 audio, with the synthesized versions as a fallback ----
+  // (an Artifact can't fetch audio files at all, so the fallback is what plays
+  //  there; see docs/audio/README.md for the sources and licences)
+  const SAMPLES = {
+    bgm:     { src:'./audio/bgm.ogg',      vol:0.34, loop:true },
+    throw1:  { src:'./audio/throw1.flac',  vol:0.9 },
+    throw2:  { src:'./audio/throw2.flac',  vol:0.9 },
+    step:    { src:'./audio/step.ogg',     vol:0.5 },
+    click:   { src:'./audio/click.ogg',    vol:0.5 },
+    capture: { src:'./audio/capture.ogg',  vol:0.85 },
+    chime:   { src:'./audio/chime.ogg',    vol:0.7 },
+    fanfare: { src:'./audio/fanfare.ogg',  vol:0.75 },
+  };
+  const sampleReady = {};
+  (function preloadSamples(){
+    Object.keys(SAMPLES).forEach(key => {
+      const def = SAMPLES[key];
+      const el = new Audio();
+      el.preload = 'auto';
+      el.src = def.src;
+      el.volume = def.vol;
+      if (def.loop) el.loop = true;
+      el.addEventListener('canplaythrough', () => { sampleReady[key] = true; }, { once:true });
+      el.addEventListener('error', () => { sampleReady[key] = false; });
+      def.el = el;
+    });
+  })();
+
+  function playSample(key, rate){
+    const def = SAMPLES[key];
+    if (!audio.enabled || !def || !sampleReady[key]) return false;
+    try {
+      const node = def.loop ? def.el : def.el.cloneNode();
+      node.volume = def.vol;
+      node.playbackRate = rate || 1;
+      node.currentTime = 0;
+      const p = node.play();
+      if (p && p.catch) p.catch(() => {});
+      return true;
+    } catch (e){ return false; }
+  }
+
+  function playClack(){
+    if (playSample(Math.random() < 0.5 ? 'throw1' : 'throw2')) return;
+    [0,0.06,0.12,0.2].forEach((t,i) => playNoiseBurst({ when:t, duration:0.05, gain:0.22-i*0.02, filterFreq:1400+i*200 }));
+  }
+  function playDing(){
+    if (playSample('chime')) return;
+    playTone(880,{type:'triangle',gain:0.2,decay:0.25}); playTone(1318.5,{type:'triangle',gain:0.14,decay:0.3,when:0.05});
+  }
+  function playHop(){
+    if (playSample('step', 0.92 + Math.random()*0.18)) return;
+    playTone(520,{type:'square',gain:0.08,decay:0.06});
+  }
+  function playClick(){
+    if (playSample('click')) return;
+    playTone(300,{type:'square',gain:0.05,decay:0.04});
+  }
+  function playSad(){
+    // the capture thud slowed right down reads as a gloomy 빽도
+    if (playSample('capture', 0.6)) return;
+    playTone(300,{type:'sawtooth',gain:0.12,decay:0.18}); playTone(220,{type:'sawtooth',gain:0.12,decay:0.28,when:0.12});
+  }
   function playFinishChime(){
+    if (playSample('chime', 1.15)) return;
     [523.25, 659.25, 783.99].forEach((f,i) => playTone(f, { type:'triangle', gain:0.16, decay:0.4, when:i*0.09 }));
   }
   function playFanfare(){
+    if (playSample('fanfare')) return;
     [523.25, 659.25, 783.99, 1046.5].forEach((f,i) => playTone(f, { type:'triangle', gain:0.2, decay:0.5, when:i*0.14 }));
     playTone(1318.5, { type:'triangle', gain:0.18, decay:1.0, when:0.6 });
   }
   const BGM_NOTES = [392.0,440.0,523.25,587.33,659.25,587.33,523.25,440.0];
   function startBGM(){
-    if (audio.bgmTimer || !audio.enabled) return;
+    if (!audio.enabled) return;
+    if (sampleReady.bgm){ playSample('bgm'); return; }
+    if (audio.bgmTimer) return;
     audio.bgmStep = 0;
     audio.bgmTimer = setInterval(() => {
       if (!audio.enabled) return;
@@ -682,7 +763,11 @@
       audio.bgmStep++;
     }, 420);
   }
-  function stopBGM(){ clearInterval(audio.bgmTimer); audio.bgmTimer = null; }
+  function stopBGM(){
+    clearInterval(audio.bgmTimer); audio.bgmTimer = null;
+    const bgm = SAMPLES.bgm && SAMPLES.bgm.el;
+    if (bgm){ try { bgm.pause(); } catch (e) {} }
+  }
 </script>
 
 <script type="importmap">
@@ -955,6 +1040,7 @@
     const api = {
       group, bob, joints, design,
       charName: design.name + (variant === 1 ? ' II' : ''),
+      personaIndex: 0,
       poseTarget: Object.assign({}, IDLE),
       walking: false,
       walkPhase: 0,
@@ -1168,8 +1254,53 @@
         m.position.y = 0.05 + rand()*0.02;
         m.rotation.y = rand()*Math.PI;
         m.receiveShadow = true; g.add(m);
+        // a small cairn whose stone count differs per arm stone
+        const n = 1 + (hashSeed(id) % 3);
+        for (let i = 0; i < n; i++){
+          const peb = new THREE.Mesh(new THREE.DodecahedronGeometry(0.045 + rand()*0.02),
+            mat(0xd9c9a3, 0.8));
+          const a = rand()*Math.PI*2;
+          peb.position.set(Math.cos(a)*0.12, 0.12 + i*0.07, Math.sin(a)*0.12);
+          peb.rotation.set(rand(), rand(), rand());
+          g.add(peb);
+        }
       }
+
+      // ---- seasonal dressing, so no two 자리 look the same ----
+      addSeasonDecor(g, node, rand, mat);
       return g;
+    }
+
+    // 앞밭 봄 / 뒷밭 여름 / 쨀밭 가을 / 날밭 겨울 — plus per-node jitter, which
+    // is what actually makes all 29 자리 read as distinct props
+    function addSeasonDecor(g, node, rand, mat){
+      if (node.kind === 'center') return;
+      const season = node.field;
+      const count = 2 + Math.floor(rand()*3);
+      for (let i = 0; i < count; i++){
+        const a = rand()*Math.PI*2;
+        const r = 0.2 + rand()*0.16;
+        let deco;
+        if (season === 0){          // 봄 — 꽃
+          deco = new THREE.Mesh(new THREE.SphereGeometry(0.035 + rand()*0.02, 8, 6),
+            mat(rand() < 0.5 ? 0xf7a8c4 : 0xfff0f5, 0.7));
+          deco.scale.y = 0.6;
+        } else if (season === 1){   // 여름 — 잎
+          deco = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.17 + rand()*0.08, 4),
+            mat(0x4e9a3a, 0.85));
+          deco.rotation.z = (rand()-0.5)*1.1;
+        } else if (season === 2){   // 가을 — 이삭
+          deco = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.2 + rand()*0.1, 5),
+            mat(rand() < 0.5 ? 0xd8a441 : 0xc27c2a, 0.8));
+          deco.rotation.z = (rand()-0.5)*0.8;
+          deco.rotation.x = (rand()-0.5)*0.4;
+        } else {                    // 겨울 — 눈·서리
+          deco = new THREE.Mesh(new THREE.OctahedronGeometry(0.04 + rand()*0.025),
+            new THREE.MeshStandardMaterial({ color:0xf2f7ff, roughness:0.35, emissive:0x9fc4de, emissiveIntensity:0.2 }));
+        }
+        deco.position.set(Math.cos(a)*r, 0.08 + rand()*0.05, Math.sin(a)*r);
+        g.add(deco);
+      }
     }
     Object.keys(NODES).forEach(id => scene.add(makeNodeMesh(id, NODES[id])));
 
@@ -1192,6 +1323,42 @@
     fieldLabelAnchors.forEach((p, f) => addLabel(FIELD_NAMES[f], p, 'field'));
 
     const projected = new THREE.Vector3();
+
+    // ---- speech bubbles that follow each character ----
+    const speechLayer = document.getElementById('speech');
+    const bubbles = [];
+    function speak(piece, text, ms){
+      let b = bubbles.find(x => x.piece === piece);
+      if (!b){
+        const el = document.createElement('div');
+        el.className = 'speech-bubble';
+        speechLayer.appendChild(el);
+        b = { piece, el };
+        bubbles.push(b);
+      }
+      b.el.textContent = text;
+      b.el.classList.add('show');
+      b.until = performance.now() + (ms || 2600);
+    }
+    function hushAll(){ bubbles.forEach(b => { b.until = 0; b.el.classList.remove('show'); }); }
+    function updateBubbles(now){
+      const rect = renderer.domElement.getBoundingClientRect();
+      const head = new THREE.Vector3();
+      for (const b of bubbles){
+        if (!b.until || now > b.until){ b.el.classList.remove('show'); continue; }
+        if (b.piece.getHeadWorldPosition) b.piece.getHeadWorldPosition(head);
+        else head.copy(b.piece.group.position).add(new THREE.Vector3(0, 1.4, 0));
+        head.y += 0.42;
+        projected.copy(head).project(camera);
+        if (projected.z > 1){ b.el.classList.remove('show'); continue; }
+        const x = rect.left + (projected.x*0.5 + 0.5) * rect.width;
+        const y = rect.top + (-projected.y*0.5 + 0.5) * rect.height;
+        b.el.style.transform = 'translate(-50%,-100%) translate('
+          + Math.max(70, Math.min(window.innerWidth - 70, x)).toFixed(1) + 'px,'
+          + Math.max(70, y).toFixed(1) + 'px)';
+      }
+    }
+
     function updateLabels(){
       const rect = renderer.domElement.getBoundingClientRect();
       for (const L of labels){
@@ -1293,11 +1460,14 @@
       return c;
     }
     function updateTitleCamera(now, dt){
-      titleAngle += dt * 0.16;
+      titleAngle += dt * 0.22;
       const c = titleCenter();
-      // aimed low so the line-up sits in the upper half, clear of the menu card
-      camera.position.set(c.x + Math.sin(titleAngle)*3.4, 1.7, c.z + Math.cos(titleAngle)*3.4);
-      lookAt.set(c.x, 0.15, c.z);
+      // they stand in a wide row, so sway across the front instead of orbiting
+      // all the way round (which would end up looking down the line)
+      const sway = Math.sin(titleAngle) * 0.55;
+      const dist = 7.4;
+      camera.position.set(c.x + Math.sin(sway)*dist, 2.5, c.z + Math.cos(sway)*dist);
+      lookAt.set(c.x, 0.62, c.z);
       camera.lookAt(lookAt);
       updateTitleChatter(now, dt);
     }
@@ -1325,6 +1495,10 @@
           me.setPose(speaking && Math.sin(now/620 + mi*2) > 0.75 ? 'cheer' : 'idle');
           me.setExpression(speaking ? 'neutral' : 'happy');
           if (me.setTalking) me.setTalking(speaking, now + mi*300);
+          if (speaking && st.spokeFor !== st.timer){
+            st.spokeFor = st.timer;
+            if (window.sayLine) sayLine(me, 'idle', 2400);
+          }
           if ('headExtra' in me){
             me.headExtra = speaking ? Math.sin(now/420 + mi)*0.05
                                     : 0.1 + Math.sin(now/300 + mi)*0.09;
@@ -1578,6 +1752,7 @@
       if (!titleMode) applyBickerJitter(now);
       pieceMeshes.forEach(p => p.tickAnim(now, dt));
       updateLabels();
+      updateBubbles(now);
       for (let i=animations.length-1; i>=0; i--){
         const a = animations[i];
         const t = Math.min(1, (now-a.start)/a.duration);
@@ -1591,7 +1766,7 @@
     return {
       pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, focusOnFace,
       focusOnPiece, toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear,
-      hideSticks, restackSlot, exitTitleMode, camera, sendHome,
+      hideSticks, restackSlot, exitTitleMode, camera, sendHome, speak, hushAll,
     };
   }
 </script>
@@ -1629,6 +1804,7 @@
       pm.faceTowards(0, 1);
       pm.group.rotation.y = 0;
     });
+    if (board3d.hushAll) board3d.hushAll();
     renderPlayerBar();
     renderHistory();
     showScreen('game');
@@ -1661,6 +1837,66 @@
   function renderHistory(){
     document.getElementById('throw-history').innerHTML = state.history.map(r => '<span class="history-chip">'+r+'</span>').join('');
   }
+  // ================= 대사: 캐릭터마다 성격이 다른 말 =================
+  const SPEECH_LINES = [
+    { // 시노 — 차분한 학생회장
+      idle:   ['오늘 별자리가 좋네요.', '차례를 지켜서, 천천히.', '방까지 가면 지름길이 열려요.', '확률을 계산해 보면… 음.', '무리하지 않는 게 좋아요.'],
+      great:  ['좋아요, 계획대로.', '이 정도는 예상했어요.', '침착하게, 계속 갑니다.'],
+      good:   ['나쁘지 않네요.', '순조로워요.'],
+      meh:    ['한 칸이라도 전진이죠.', '괜찮아요, 아직 멀어요.'],
+      bad:    ['…뒤로 가라니요.', '이건 계산에 없었는데.'],
+      capture:['미안해요, 규칙이니까요.', '자리를 비워주시겠어요?'],
+      caught: ['어머, 제가 방심했네요.', '처음부터 다시 세우죠.'],
+      finish: ['먼저 들어가 있을게요.'],
+      win:    ['모두 수고했어요.'],
+      lose:   ['다음엔 이길 거예요.'],
+    },
+    { // 비타 — 씩씩한 모험가
+      idle:   ['한 판 더 가자!', '내가 제일 빠를 거야!', '지름길? 당연히 타야지!', '몸이 근질근질하네.', '자, 누가 먼저 도착할까!'],
+      great:  ['좋았어어어!', '이게 바로 나야!', '오늘 손이 뜨겁다!'],
+      good:   ['오케이, 순항 중!', '이 정도면 됐어!'],
+      meh:    ['한 칸이라도 어디야.', '흠, 조금 아쉽네.'],
+      bad:    ['으아아 뒤로?!', '말도 안 돼!'],
+      capture:['미안, 내가 지나간다!', '비켜줄래?'],
+      caught: ['아아아 내 자리!', '이건 반칙이야!'],
+      finish: ['1등으로 도착!'],
+      win:    ['내가 최고야!'],
+      lose:   ['다음엔 안 봐줘!'],
+    },
+    { // 비비 — 발랄한 아이
+      idle:   ['헤헤, 재밌겠다!', '나 오늘 운 좋은 것 같아!', '별이 반짝반짝해!', '누가 이길까~?', '방에 서고 싶다!'],
+      great:  ['우와아 대박!', '나 좀 잘하는 것 같아!', '히히 신난다!'],
+      good:   ['좋아좋아!', '순조로워~'],
+      meh:    ['에헤… 한 칸.', '괜찮아 괜찮아!'],
+      bad:    ['히잉 뒤로 갔어…', '너무해!'],
+      capture:['잡았다! 히히', '앗, 미안해!'],
+      caught: ['우엥 잡혔어!', '처음부터 다시야…'],
+      finish: ['나 도착했어!'],
+      win:    ['이겼다! 야호!'],
+      lose:   ['다음엔 내가 이길 거야!'],
+    },
+    { // 빅토리아 — 우아한 아가씨
+      idle:   ['우아하게 한 바퀴, 어떨까요.', '서두를 필요 없어요.', '별자리 이름이 예쁘네요.', '이 판, 마음에 들어요.', '차 한 잔 하고 싶네요.'],
+      great:  ['훌륭하군요.', '역시 제 운이에요.', '기분이 좋아요.'],
+      good:   ['적당하네요.', '나쁘지 않아요.'],
+      meh:    ['천천히 가도 괜찮아요.', '한 칸이면 충분해요.'],
+      bad:    ['어머… 곤란하네요.', '이런 일도 있군요.'],
+      capture:['실례하겠습니다.', '조금 비켜주시겠어요?'],
+      caught: ['어머나!', '이건 예상 밖이에요.'],
+      finish: ['먼저 도착했어요.'],
+      win:    ['좋은 승부였어요.'],
+      lose:   ['훌륭하셨어요.'],
+    },
+  ];
+  const LINE_FOR_CATEGORY = { mo:'great', yut:'great', geol:'good', gae:'good', do:'meh', backdo:'bad' };
+
+  function sayLine(pieceMesh, kind, ms){
+    if (!pieceMesh || !board3d.speak) return;
+    const persona = SPEECH_LINES[pieceMesh.personaIndex || 0] || SPEECH_LINES[0];
+    const pool = persona[kind] || persona.idle;
+    board3d.speak(pieceMesh, pool[Math.floor(Math.random()*pool.length)], ms);
+  }
+
   function reactionEmojiFor(category){
     if (category==='mo' || category==='yut') return ['🤩','💃','🕺'][Math.floor(Math.random()*3)];
     if (category==='backdo') return ['😱','😭'][Math.floor(Math.random()*2)];
@@ -1782,7 +2018,7 @@
   async function captureAt(nodeId, owner){
     const foes = piecesAt(nodeId).filter(p => p.owner !== owner);
     if (!foes.length) return 0;
-    playSad();
+    if (!playSample('capture')) playSad();
     await Promise.all(foes.map(foe => {
       foe.place = 'start';
       foe.nodeId = null;
@@ -1790,6 +2026,7 @@
       const mesh = board3d.pieceMeshes.find(pm => pm.owner === foe.owner && pm.idx === foe.idx);
       if (!mesh) return Promise.resolve();
       mesh.setExpression('shock');
+      sayLine(mesh, 'caught', 2400);
       const [bx, bz] = board3d.benchPos(foe.owner, foe.idx);
       mesh.slot = 'bench:' + foe.owner + ':' + foe.idx;
       return board3d.sendHome(mesh, bx, bz);
@@ -1819,9 +2056,10 @@
     el.classList.add('go');
     playFanfare();
     // winners cheer, losers slump
-    board3d.pieceMeshes.forEach(pm => {
+    board3d.pieceMeshes.forEach((pm, i) => {
       if (pm.owner === winner){ pm.setExpression('excited'); pm.setPose('cheer'); }
       else { pm.setExpression('sad'); pm.setPose('droop'); }
+      setTimeout(() => sayLine(pm, pm.owner === winner ? 'win' : 'lose', 4000), 500 + i*350);
     });
     board3d.toOverview();
   }
@@ -1906,6 +2144,7 @@
     setPieceExpression(thrower, outcome.category);
     await board3d.focusOnFace(thrower);
     showReaction(thrower, reactionEmojiFor(outcome.category));
+    sayLine(thrower, LINE_FOR_CATEGORY[outcome.category] || 'good', 1800);
     await wait(1000);
     hideReaction();
 
@@ -1937,9 +2176,13 @@
       if (land === 'FINISH'){
         playFinishChime();
         meshes.forEach(m => { if (m){ m.setExpression('excited'); m.setPose('cheer'); } });
+        sayLine(meshes[0], 'finish', 2600);
       } else {
         captured = await captureAt(land, owner);
-        if (captured) showImpact({ result:'잡았다!', steps:0, extraTurn:true, tone:'red' });
+        if (captured){
+          showImpact({ result:'잡았다!', steps:0, extraTurn:true, tone:'red' });
+          sayLine(meshes[0], 'capture', 2200);
+        }
       }
     } else {
       await wait(400);
@@ -2046,6 +2289,32 @@
     cheer:   { armDown:-0.70, armSwing:-0.20, elbow: 0.30, torso:-0.06, head:-0.12 },
     droop:   { armDown: 1.40, armSwing: 0.15, elbow: 0.12, torso: 0.20, head: 0.30 },
   };
+
+  // Each idol stands and celebrates differently. Poses may override a single
+  // side (armDownL / armSwingR / elbowL …), which is what lets one of them
+  // wave with one hand while another folds both in front.
+  const PERSONA_POSES = [
+    { // 시노 — 차분한 학생회장: 두 손을 앞으로 모으고, 기뻐도 절제된 만세
+      idle:  { armDown: 1.44, armSwing: 0.16, elbow: 0.85 },
+      cheer: { armDown:-0.10, armSwing:-0.40, elbow: 0.80, head:-0.08 },
+      droop: { armDown: 1.46, armSwing: 0.04, elbow: 0.55, torso: 0.26, head: 0.34 },
+    },
+    { // 비타 — 씩씩한 모험가: 팔을 벌리고 당당하게, 기쁘면 두 손 만세
+      idle:  { armDown: 1.10, armSwing: 0.00, elbow: 0.16 },
+      cheer: { armDown:-1.00, armSwing:-0.08, elbow: 0.12, torso:-0.10 },
+      droop: { armDown: 1.30, armSwing: 0.30, elbow: 0.10, torso: 0.12, head: 0.20 },
+    },
+    { // 비비 — 발랄한 아이: 한 손 흔들며 인사, 기쁘면 폴짝
+      idle:  { armDown: 1.30, armSwing: 0.10, elbow: 0.40, armDownR: 0.05, elbowR: 0.75 },
+      cheer: { armDown:-0.60, armSwing:-0.55, elbow: 0.50, head:-0.16 },
+      droop: { armDown: 1.40, armSwing: 0.08, elbow: 0.34, torso: 0.22, head: 0.32 },
+    },
+    { // 빅토리아 — 우아한 아가씨: 한 손은 가슴에, 기쁘면 조용히 손뼉
+      idle:  { armDown: 1.34, armSwing: 0.12, elbow: 0.45, armDownL: 1.05, elbowL: 1.15 },
+      cheer: { armDown: 0.35, armSwing:-0.55, elbow: 1.25, head:-0.06 },
+      droop: { armDown: 1.44, armSwing: 0.00, elbow: 0.75, torso: 0.24, head: 0.36 },
+    },
+  ];
   // VRM standard expression presets; VRM 0.x joy/sorrow/fun are mapped onto
   // happy/sad/relaxed by three-vrm, so these names work for both spec versions.
   const VRM_EXPRESSIONS = {
@@ -2057,7 +2326,8 @@
   };
   const EXPRESSION_KEYS = ['happy','sad','angry','relaxed','surprised','aa','oh','ih','ee','ou'];
 
-  function wrapVrm(vrm, charName){
+  function wrapVrm(vrm, charName, personaIndex){
+    const persona = PERSONA_POSES[personaIndex] || {};
     const group = new THREE.Group();
     group.add(vrm.scene);
 
@@ -2087,7 +2357,11 @@
       pose: VRM_POSES.idle,
       walking: false, walkPhase: 0, facing: 0, headExtra: 0, talking: false,
 
-      setPose(name){ this.pose = VRM_POSES[name] || VRM_POSES.idle; },
+      personaIndex: personaIndex || 0,
+      setPose(name){
+        const base = VRM_POSES[name] || VRM_POSES.idle;
+        this.pose = persona[name] ? Object.assign({}, base, persona[name]) : base;
+      },
       getHeadWorldPosition(out){
         if (rawHead) rawHead.getWorldPosition(out);
         else out.copy(group.position).add(new THREE.Vector3(0, 1.3, 0));
@@ -2120,7 +2394,12 @@
       tickAnim(now, dt){
         const k = Math.min(1, dt * 11);
         const p = this.pose;
-        let swingL = p.armSwing, swingR = p.armSwing;
+        const downL = p.armDownL !== undefined ? p.armDownL : p.armDown;
+        const downR = p.armDownR !== undefined ? p.armDownR : p.armDown;
+        const elbowL = p.elbowL !== undefined ? p.elbowL : p.elbow;
+        const elbowR = p.elbowR !== undefined ? p.elbowR : p.elbow;
+        let swingL = p.armSwingL !== undefined ? p.armSwingL : p.armSwing;
+        let swingR = p.armSwingR !== undefined ? p.armSwingR : p.armSwing;
         let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0;
 
         if (this.walking){
@@ -2132,13 +2411,13 @@
           swingL = Math.sin(w) * 0.35; swingR = -Math.sin(w) * 0.35;
           vrm.scene.position.y = Math.abs(Math.sin(w)) * 0.035;
         } else {
-          vrm.scene.position.y = Math.sin(now/620) * 0.012;
+          vrm.scene.position.y = Math.sin(now/(560 + (personaIndex||0)*70)) * 0.012;
         }
 
-        slerpBone(joints.shoulderL, armQuat(qT, 1, p.armDown, swingL), k);
-        slerpBone(joints.shoulderR, armQuat(qT, -1, p.armDown, swingR), k);
-        slerpBone(joints.elbowL, qT.setFromAxisAngle(AX_Y, -p.elbow), k);
-        slerpBone(joints.elbowR, qT.setFromAxisAngle(AX_Y, p.elbow), k);
+        slerpBone(joints.shoulderL, armQuat(qT, 1, downL, swingL), k);
+        slerpBone(joints.shoulderR, armQuat(qT, -1, downR, swingR), k);
+        slerpBone(joints.elbowL, qT.setFromAxisAngle(AX_Y, -elbowL), k);
+        slerpBone(joints.elbowR, qT.setFromAxisAngle(AX_Y, elbowR), k);
         slerpBone(joints.hipL, qT.setFromAxisAngle(AX_X, hipL), k);
         slerpBone(joints.hipR, qT.setFromAxisAngle(AX_X, hipR), k);
         slerpBone(joints.kneeL, qT.setFromAxisAngle(AX_X, kneeL), k);
@@ -2190,7 +2469,7 @@
           o.frustumCulled = false;
           if (o.isMesh) o.castShadow = true;
         });
-        instances.push(wrapVrm(vrm, idol.name));
+        instances.push(wrapVrm(vrm, idol.name, owner*2 + idx));
         done++;
         setProgress(done / 4);
       }
