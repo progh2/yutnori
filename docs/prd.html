@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사이버 윷놀이 PRD</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg: #f6f1e7;
+    --surface: #fffdf8;
+    --surface-2: #efe6d4;
+    --ink: #24201a;
+    --ink-muted: #6c6152;
+    --ink-faint: #948a78;
+    --accent: #b0472b;
+    --accent-ink: #ffffff;
+    --accent-soft: #f0dcc9;
+    --accent-soft-ink: #6b3016;
+    --rule: #ddd0b8;
+    --rule-strong: #c9b998;
+    --code-bg: #efe7d6;
+    --shadow: 0 1px 2px rgba(36,32,26,.06), 0 8px 24px -12px rgba(36,32,26,.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #1c1712;
+      --surface: #241e17;
+      --surface-2: #2c2419;
+      --ink: #ece3d3;
+      --ink-muted: #b3a68e;
+      --ink-faint: #7d7360;
+      --accent: #e2794f;
+      --accent-ink: #201209;
+      --accent-soft: #3a2a1c;
+      --accent-soft-ink: #f0c8a8;
+      --rule: #3c3324;
+      --rule-strong: #4c4230;
+      --code-bg: #2c2419;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #1c1712;
+    --surface: #241e17;
+    --surface-2: #2c2419;
+    --ink: #ece3d3;
+    --ink-muted: #b3a68e;
+    --ink-faint: #7d7360;
+    --accent: #e2794f;
+    --accent-ink: #201209;
+    --accent-soft: #3a2a1c;
+    --accent-soft-ink: #f0c8a8;
+    --rule: #3c3324;
+    --rule-strong: #4c4230;
+    --code-bg: #2c2419;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{ box-sizing: border-box; }
+  html{ background: var(--bg); scroll-behavior: smooth; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans KR", "Noto Sans", sans-serif;
+    line-height: 1.7;
+    font-size: 15.5px;
+    margin: 0;
+  }
+  ::selection{ background: var(--accent-soft); color: var(--accent-soft-ink); }
+
+  a{ color: var(--accent); text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
+
+  h1,h2,h3,h4{
+    font-family: "Noto Serif KR", "Noto Serif", serif;
+    color: var(--ink);
+    text-wrap: balance;
+    font-weight: 700;
+  }
+
+  .page{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+    display: grid;
+    grid-template-columns: 232px minmax(0,1fr);
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 900px){
+    .page{ grid-template-columns: 1fr; gap: 24px; padding: 28px 16px 72px; }
+  }
+
+  .masthead{
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule-strong);
+    margin-bottom: 4px;
+  }
+  .eyebrow{
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background: var(--accent); display:inline-block; }
+  .masthead h1{
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.15;
+    margin: 0;
+  }
+  .masthead .sub{
+    color: var(--ink-muted);
+    font-size: 16px;
+    max-width: 62ch;
+    margin: 0;
+  }
+  .meta-row{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .meta-cell{
+    background: var(--surface);
+    padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .meta-cell .k{
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-faint); font-family: "JetBrains Mono", monospace;
+  }
+  .meta-cell .v{ font-size: 13.5px; color: var(--ink); }
+
+  nav.toc{
+    position: sticky; top: 32px;
+    display: flex; flex-direction: column; gap: 2px;
+    font-size: 13.5px;
+  }
+  nav.toc a{
+    color: var(--ink-muted); text-decoration: none;
+    padding: 6px 10px; border-radius: 6px;
+    border-left: 2px solid transparent;
+  }
+  nav.toc a:hover{ color: var(--ink); background: var(--surface-2); }
+  nav.toc a.lvl2{ padding-left: 22px; font-size: 12.5px; color: var(--ink-faint); }
+  @media (max-width: 900px){
+    nav.toc{ position: static; }
+    .toc-wrap summary{
+      cursor: pointer; font-family: "JetBrains Mono", monospace;
+      font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--accent); padding: 10px 0;
+    }
+  }
+
+  main{ min-width: 0; }
+  section{ margin-bottom: 52px; scroll-margin-top: 24px; }
+  section > h2{
+    font-size: 22px;
+    display: flex; align-items: baseline; gap: 10px;
+    margin: 0 0 6px;
+  }
+  section > h2 .num{
+    color: var(--accent); font-family: "JetBrains Mono", monospace;
+    font-size: 14px; font-weight: 500;
+  }
+  section h3{ font-size: 16.5px; margin: 28px 0 10px; }
+  section > p.lede{ color: var(--ink-muted); margin: 0 0 20px; }
+  p{ margin: 0 0 14px; max-width: 74ch; }
+  ul, ol{ margin: 0 0 14px; padding-left: 22px; }
+  li{ margin-bottom: 6px; max-width: 72ch; }
+  li::marker{ color: var(--accent); }
+
+  table{
+    width: 100%; border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13.5px;
+    margin: 4px 0 18px;
+  }
+  .table-wrap{ overflow-x: auto; border-radius: 10px; }
+  th, td{
+    padding: 9px 13px; text-align: left;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  thead th{
+    background: var(--surface-2);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--ink-muted); font-weight: 500;
+  }
+  tbody tr:last-child td{ border-bottom: none; }
+  td.num, th.num{ font-variant-numeric: tabular-nums; }
+
+  code{
+    font-family: "JetBrains Mono", monospace;
+    background: var(--code-bg);
+    padding: 1px 6px; border-radius: 4px; font-size: .9em;
+  }
+
+  blockquote.decision{
+    background: var(--accent-soft);
+    color: var(--accent-soft-ink);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 4px 0 20px;
+    font-size: 13.5px;
+  }
+  blockquote.decision p{ margin: 0; max-width: none; }
+  blockquote.decision strong{ font-family: "Noto Serif KR", serif; }
+
+  .diagram-card{
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 18px;
+    margin: 4px 0 20px;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .diagram-card .cap{
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11.5px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 10px;
+  }
+  .diagram-card .mermaid{ background: transparent; }
+
+  .dod{ list-style: none; padding-left: 0; }
+  .dod li{
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 7px 0; border-bottom: 1px solid var(--rule);
+  }
+  .dod li:last-child{ border-bottom: none; }
+  .dod input{ margin-top: 3px; accent-color: var(--accent); width: 15px; height: 15px; flex: none; }
+
+  .stage-grid{ display: grid; gap: 10px; margin: 4px 0 20px; }
+  .stage{
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 4px 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .stage .idx{
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent); font-size: 15px; font-weight: 500;
+    grid-row: 1 / 3;
+  }
+  .stage .name{ font-weight: 600; }
+  .stage .detail{ color: var(--ink-muted); font-size: 13px; }
+  .stage .detail b{ color: var(--ink); font-weight: 500; }
+
+  footer{
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--rule);
+    margin-top: 12px; padding-top: 20px;
+    color: var(--ink-faint); font-size: 12.5px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  footer code{ background: none; padding: 0; }
+  footer a{ color: var(--ink-faint); }
+
+  a:focus-visible, summary:focus-visible{ outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce){ *{ scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <span class="eyebrow"><span class="dot"></span>Product Requirements Document</span>
+    <h1>🎲 사이버 윷놀이 (Cyber Yutnori)</h1>
+    <p class="sub">AI 에이전트와 함께 페어 프로그래밍으로 만드는 1:1 턴 방식 전통 윷놀이. 규칙 명세부터 아키텍처, 단계별 개발 계획까지 하나의 기준 문서로 정리한다.</p>
+    <div class="meta-row">
+      <div class="meta-cell"><span class="k">문서 유형</span><span class="v">PRD</span></div>
+      <div class="meta-cell"><span class="k">작성자</span><span class="v">seoulax24 + AI 에이전트</span></div>
+      <div class="meta-cell"><span class="k">대상 독자</span><span class="v">본인 · 개발 에이전트 · 멘토</span></div>
+      <div class="meta-cell"><span class="k">산출물</span><span class="v">단계별 Claude Artifact</span></div>
+      <div class="meta-cell"><span class="k">상태</span><span class="v">Draft — 구현하며 갱신</span></div>
+    </div>
+  </header>
+
+  <div class="toc-wrap">
+    <details open>
+      <summary>목차</summary>
+      <nav class="toc">
+        <a href="#s1">1 · 개요</a>
+        <a href="#s2">2 · 용어 정리</a>
+        <a href="#s3">3 · 기능 요구사항</a>
+        <a href="#s4">4 · 게임 규칙 상세 명세</a>
+        <a class="lvl2" href="#s4-1">4.1 말판 구조</a>
+        <a class="lvl2" href="#s4-2">4.2 윷 던지기 확률</a>
+        <a class="lvl2" href="#s4-5">4.5 잡기 & 추가 턴</a>
+        <a href="#s5">5 · 플레이어 구성 & 봇</a>
+        <a href="#s6">6 · 시스템 아키텍처</a>
+        <a class="lvl2" href="#s6-2">클래스 다이어그램</a>
+        <a class="lvl2" href="#s6-3">상태 다이어그램</a>
+        <a class="lvl2" href="#s6-4">시퀀스 다이어그램</a>
+        <a href="#s7">7 · UI/UX 디자인 방향</a>
+        <a href="#s8">8 · 개발 단계별 계획</a>
+        <a href="#s9">9 · 완료 기준</a>
+        <a href="#s10">10 · 리스크 & 오픈 이슈</a>
+      </nav>
+    </details>
+  </div>
+
+  <main>
+
+    <section id="s1">
+      <h2><span class="num">01</span>개요</h2>
+      <h3>1.1 프로젝트 소개</h3>
+      <p>AI 에이전트(Claude)와 함께 페어 프로그래밍 방식으로 전통 윷놀이를 웹 게임으로 구현한다. 2명의 참가자(사람 또는 봇)가 1:1로 턴을 주고받으며 전통 윷놀이 규칙에 따라 말을 움직여 먼저 두 말을 모두 완주시키는 쪽이 승리한다.</p>
+      <h3>1.2 학습 목표</h3>
+      <ul>
+        <li>사이버 윷놀이 게임을 AI 에이전트와 함께 개발하는 경험을 쌓는다</li>
+        <li>턴 방식 1:1 게임의 상태 관리와 흐름 제어를 구현할 수 있다</li>
+        <li>윷놀이 말판 위에서의 말 이동(지름길, 업기, 잡기 포함) 로직을 구현할 수 있다</li>
+      </ul>
+      <h3>1.3 문서 목적 및 대상 독자</h3>
+      <p>이 문서는 구현에 들어가기 전 기능/규칙/아키텍처에 대한 합의를 기록하고, 이후 여러 개발 세션(대화창)에 걸쳐 단계적으로 작업을 이어갈 때 각 세션이 참고할 단일 기준(source of truth) 역할을 한다. 외부 멘토가 설계 원리를 빠르게 파악할 수 있도록 UML 다이어그램(클래스/상태/시퀀스)을 포함한다.</p>
+    </section>
+
+    <section id="s2">
+      <h2><span class="num">02</span>용어 정리</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>용어</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>도 / 개 / 걸 / 윷 / 모</td><td>윷 던지기 결과. 각각 1 / 2 / 3 / 4 / 5칸 전진</td></tr>
+          <tr><td>빽도</td><td>윷 던지기 결과 중 하나. 1칸 후퇴 (시작점 이전이면 즉시 아웃 처리)</td></tr>
+          <tr><td>업기</td><td>같은 편의 말 2개가 같은 칸에 있을 때 하나의 묶음으로 합쳐져 함께 이동하는 것</td></tr>
+          <tr><td>잡기</td><td>상대 말이 있는 칸에 도착해 상대 말을 시작 전(말판 밖)으로 되돌리는 것</td></tr>
+          <tr><td>지름길</td><td>말판 모서리(꼭짓점)에서 중앙을 거쳐 반대편으로 질러가는 대각선 경로</td></tr>
+          <tr><td>완주</td><td>말이 말판을 한 바퀴(또는 지름길 경유) 돌아 출발점을 통과해 빠져나가는 것</td></tr>
+          <tr><td>턴</td><td>한 플레이어가 윷을 던지고 말을 움직이는 한 차례의 행동 단위 (추가 턴 포함 가능)</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="s3">
+      <h2><span class="num">03</span>기능 요구사항</h2>
+      <ol>
+        <li>참가자 2명이 1:1로 턴 방식 진행 (사람/봇 조합은 시작 시 선택)</li>
+        <li>전통 윷놀이 말판, 각 플레이어 말 2개</li>
+        <li>턴마다 도/개/걸/윷/모 (+ 빽도) 결과를 표시</li>
+        <li>말 2개는 업을 수 있으며, 2개 말이 모두 시작점으로 돌아와야 게임 종료</li>
+        <li>말판/윷 디자인은 보기 좋은 수준에서 자유롭게 결정 (코믹한 톤, 3D 윷 던지기)</li>
+        <li>그 외 동작은 전통 윷놀이 규칙을 따름 (잡기, 추가 턴 등)</li>
+      </ol>
+    </section>
+
+    <section id="s4">
+      <h2><span class="num">04</span>게임 규칙 상세 명세</h2>
+
+      <h3 id="s4-1">4.1 말판 구조</h3>
+      <p>전통 윷판을 그래프(노드 + 간선) 구조로 모델링한다.</p>
+      <ul>
+        <li>외곽 경로: 20개 노드로 구성된 순환 경로 (출발점 포함)</li>
+        <li>4개의 꼭짓점 노드: 각 꼭짓점은 중앙을 경유하는 <strong>지름길</strong> 간선을 추가로 가짐</li>
+        <li>중앙 노드 1개: 두 대각선 지름길이 교차하는 지점</li>
+        <li>정확한 좌표/세부 노드 수(전통적으로 20~29개 사이로 표기가 다양함)는 1단계(말판 구현)에서 참고 이미지를 기반으로 확정한다</li>
+      </ul>
+      <p><strong>지름길 사용 규칙</strong>: 말이 꼭짓점 노드에 정확히 도달하면, 다음 이동 시 일반 경로 대신 지름길(중앙 경유)을 선택할 수 있다. 중앙에서 출발점 방향 꼭짓점으로 가는 마지막 지름길은 가장 짧은 완주 경로를 제공한다.</p>
+
+      <h3 id="s4-2">4.2 윷 던지기 확률 (전통 확률 기반)</h3>
+      <p>윷가락 4개, 각각 앞/뒤 50%를 가정한 이항분포를 사용한다.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>결과</th><th>조건 (앞면 개수)</th><th class="num">확률</th><th>이동</th></tr></thead>
+        <tbody>
+          <tr><td>모</td><td>0개 (전부 뒷면)</td><td class="num">1/16</td><td>+5칸, 추가 턴</td></tr>
+          <tr><td>도</td><td>1개</td><td class="num">3/16</td><td>+1칸</td></tr>
+          <tr><td>빽도</td><td>1개 (특수 케이스로 분리)</td><td class="num">1/16</td><td>−1칸</td></tr>
+          <tr><td>개</td><td>2개</td><td class="num">6/16</td><td>+2칸</td></tr>
+          <tr><td>걸</td><td>3개</td><td class="num">4/16</td><td>+3칸</td></tr>
+          <tr><td>윷</td><td>4개 (전부 앞면)</td><td class="num">1/16</td><td>+4칸, 추가 턴</td></tr>
+        </tbody>
+      </table></div>
+      <blockquote class="decision"><p><strong>설계 결정 —</strong> 빽도는 물리적으로 4개 중 1개만 다르게 표시된 특수 윷가락으로 구현하지 않고, "도" 확률(4/16) 중 1/16을 빽도로 분리 배정하는 방식으로 단순화한다. (10.1 참고)</p></blockquote>
+
+      <h3>4.3 말 이동 규칙</h3>
+      <ul>
+        <li>말은 출발점에서 시작해 외곽 경로를 따라 반시계 방향(전통 기준)으로 이동한다</li>
+        <li>빽도로 인해 출발점보다 앞(아직 출발 전)으로 이동해야 하면 해당 말은 그대로 대기 상태 유지 (출발 전 상태에서는 빽도 무시)</li>
+        <li>이동 후 도착 칸에 따라 지름길 선택 여부를 플레이어(또는 봇)가 결정</li>
+        <li>말이 정확히 출발점을 통과하여 나가면 "완주" 처리, 더 이상 이동 대상에서 제외</li>
+      </ul>
+
+      <h3>4.4 업기 (자동 병합)</h3>
+      <ul>
+        <li>같은 플레이어의 말 2개가 같은 칸에 도착하면 <strong>자동으로</strong> 하나의 묶음(스택)으로 병합된다</li>
+        <li>병합된 말은 이후 하나의 유닛처럼 함께 이동하며, 윷 던지기 결과만큼 함께 전진/후퇴한다</li>
+        <li>병합된 스택이 상대에게 잡히면 스택 내 말 전체가 동시에 출발 전 상태로 되돌아간다</li>
+        <li>병합된 스택이 완주하면 스택 내 말 전체가 동시에 완주 처리된다</li>
+      </ul>
+
+      <h3 id="s4-5">4.5 잡기 & 추가 턴</h3>
+      <ul>
+        <li>이동한 말(또는 스택)이 도착한 칸에 상대 말(또는 스택)이 있으면 상대 말은 즉시 출발 전 상태로 되돌아간다 (잡기)</li>
+        <li>다음 두 조건 중 하나라도 만족하면 같은 플레이어가 윷을 한 번 더 던진다: (a) 윷 또는 모가 나옴 (b) 상대 말을 잡음</li>
+        <li>여러 조건이 동시에 만족되어도 추가 턴은 이벤트 발생 횟수만큼 누적된다 (예: 모가 나오고 동시에 잡기 성공 시 추가 턴 2회)</li>
+        <li>모든 추가 턴을 소진한 뒤에 상대에게 턴이 넘어간다</li>
+      </ul>
+
+      <h3>4.6 승리 조건</h3>
+      <p>한 플레이어의 말 2개가 모두 완주(출발점을 통과해 빠져나감) 하면 즉시 게임 종료 및 승리 처리한다.</p>
+    </section>
+
+    <section id="s5">
+      <h2><span class="num">05</span>플레이어 구성 & 봇</h2>
+      <h3>5.1 시작 플로우</h3>
+      <ol>
+        <li>게임 시작 시 "참가자 2명 중 사람은 몇 명인가요?" 질문 (0명 / 1명 / 2명 중 선택)</li>
+        <li>선택에 따라 나머지는 봇으로 자동 배정</li>
+        <li>0명(전원 봇) 선택 시: 사람 플레이어의 개입 없이 봇 2명이 자동으로 턴을 주고받는 관전 모드 화면이 표시됨</li>
+      </ol>
+      <h3>5.2 봇 AI 동작 방식</h3>
+      <ul>
+        <li>기본 전략: 가능한 이동 옵션(어떤 말을 움직일지, 지름길 사용 여부) 중 <strong>랜덤 유효 선택</strong> (추후 난이도별 전략 확장 가능하도록 인터페이스 분리)</li>
+        <li>봇의 턴에는 "생각 중" 표시(짧은 딜레이 + 시각적 하이라이트) 후 선택한 말/경로를 하이라이트로 보여준 뒤 이동 애니메이션 실행</li>
+        <li>전원 봇 모드에서도 동일한 시각화를 적용해 관전자가 봇의 의사결정을 따라갈 수 있게 한다</li>
+      </ul>
+    </section>
+
+    <section id="s6">
+      <h2><span class="num">06</span>시스템 아키텍처</h2>
+      <h3>6.1 기술 스택</h3>
+      <ul>
+        <li>단일 HTML 파일 (Claude Artifact로 게시, 단계별로 갱신)</li>
+        <li>렌더링: 말판/UI는 2D (SVG 또는 Canvas), 윷 던지기는 <strong>three.js</strong> 기반 3D 애니메이션</li>
+        <li>상태 관리: 순수 JS 객체/클래스 (프레임워크 없이 vanilla JS)</li>
+        <li>외부 라이브러리는 cdnjs.cloudflare.com에서 three.js UMD 빌드를 고정 버전으로 로드</li>
+      </ul>
+
+      <h3 id="s6-2">6.2 클래스 다이어그램</h3>
+      <div class="diagram-card">
+        <div class="cap">UML · Class Diagram</div>
+        <pre class="mermaid">
+classDiagram
+    class Game {
+        -Board board
+        -Player[] players
+        -int currentPlayerIndex
+        -int extraThrowCount
+        +start()
+        +executeTurn()
+        +checkWinner() Player
+    }
+    class Board {
+        -Node[] nodes
+        +getNode(id) Node
+        +getNextPosition(from, steps, useShortcut) Node
+    }
+    class Node {
+        +int id
+        +NodeType type
+        +Position coord
+        +Node next
+        +Node shortcutNext
+    }
+    class Piece {
+        -int id
+        -Player owner
+        -Node position
+        -bool isFinished
+        -Piece[] stackedWith
+        +moveBy(steps)
+        +isAtStart() bool
+    }
+    class Player {
+        <<abstract>>
+        -string name
+        -Piece[] pieces
+        +chooseMove(options) Move
+    }
+    class HumanPlayer {
+        +chooseMove(options) Move
+    }
+    class BotPlayer {
+        -Strategy strategy
+        +chooseMove(options) Move
+    }
+    class YutThrow {
+        +throw() YutResult
+        -probabilityTable Map
+    }
+    class YutResult {
+        <<enumeration>>
+        BACKDO
+        DO
+        GAE
+        GEOL
+        YUT
+        MO
+    }
+    class TurnManager {
+        +executeTurn(player)
+        +handleExtraThrow()
+        +handleCapture(piece)
+    }
+
+    Game "1" --> "1" Board
+    Game "1" --> "2" Player
+    Game "1" --> "1" TurnManager
+    Player <|-- HumanPlayer
+    Player <|-- BotPlayer
+    Player "1" --> "2" Piece
+    Board "1" --> "*" Node
+    Piece --> Node
+    TurnManager --> YutThrow
+    YutThrow --> YutResult
+        </pre>
+      </div>
+
+      <h3 id="s6-3">6.3 상태 다이어그램 (턴 흐름)</h3>
+      <div class="diagram-card">
+        <div class="cap">UML · State Diagram</div>
+        <pre class="mermaid">
+stateDiagram-v2
+    [*] --> 턴시작
+    턴시작 --> 윷던지기
+    윷던지기 --> 결과표시
+    결과표시 --> 추가턴판정
+    추가턴판정 --> 윷던지기: 윷 또는 모
+    추가턴판정 --> 말선택: 그 외
+    말선택 --> 말이동
+    말이동 --> 잡기판정
+    잡기판정 --> 윷던지기: 상대말 잡음(추가 턴)
+    잡기판정 --> 승리판정: 잡음 없음
+    승리판정 --> [*]: 두 말 모두 완주
+    승리판정 --> 턴종료: 미완주
+    턴종료 --> 턴시작: 다음 플레이어
+        </pre>
+      </div>
+
+      <h3 id="s6-4">6.4 시퀀스 다이어그램 (한 턴)</h3>
+      <div class="diagram-card">
+        <div class="cap">UML · Sequence Diagram</div>
+        <pre class="mermaid">
+sequenceDiagram
+    participant UI
+    participant Game
+    participant TurnManager
+    participant YutThrow
+    participant Player
+    participant Board
+
+    UI->>Game: 턴 시작
+    Game->>TurnManager: executeTurn(player)
+    TurnManager->>YutThrow: throw()
+    YutThrow-->>TurnManager: YutResult
+    TurnManager->>UI: 3D 애니메이션 + 결과 표시
+    TurnManager->>Player: chooseMove(가능한 옵션)
+    Player-->>TurnManager: 선택된 이동
+    TurnManager->>Board: 말 이동 적용
+    Board-->>TurnManager: 지름길/업기/잡기 결과
+    TurnManager->>Game: 잡기/승리 조건 확인
+    Game-->>UI: 화면 갱신
+        </pre>
+      </div>
+    </section>
+
+    <section id="s7">
+      <h2><span class="num">07</span>UI/UX 디자인 방향</h2>
+      <h3>7.1 전체 톤앤매너</h3>
+      <p>트리컬(tricky)하고 코믹한 디자인. 진지한 전통 공예품 느낌보다는 장난스럽고 생동감 있는 색감/모션을 사용한다 (말에 표정을 넣거나, 결과에 따라 과장된 리액션 연출 등 자유롭게 판단).</p>
+      <h3>7.2 3D 윷 던지기 (three.js)</h3>
+      <ul>
+        <li>별도의 3D 씬에서 윷가락 4개가 던져지고 회전하며 바닥에 떨어지는 애니메이션</li>
+        <li>애니메이션 종료 후 각 가락의 앞/뒤 상태를 판정해 결과(도/개/걸/윷/모/빽도) 산출 및 표시</li>
+        <li>코믹한 느낌을 위해 통통 튀는 과장된 물리감, 효과음/이펙트(선택) 고려</li>
+      </ul>
+      <h3>7.3 말판 UI</h3>
+      <ul>
+        <li>2D로 렌더링된 전통 윷판 위에 말(아이콘/이모지/커스텀 그래픽)을 배치</li>
+        <li>업힌 말은 시각적으로 겹치거나 묶음 표시(예: 뱃지에 숫자 "2")로 구분</li>
+        <li>현재 턴 플레이어, 남은 추가 턴 수를 항상 화면에 표시</li>
+      </ul>
+    </section>
+
+    <section id="s8">
+      <h2><span class="num">08</span>개발 단계별 계획</h2>
+      <p class="lede">각 단계는 독립적으로 완료 가능한 단위로 나누며, 완료 시 해당 결과물을 Claude Artifact로 등록한다. 단계 간 전환 시 새 대화창 또는 <code>/clear</code> 사용을 권장한다. 진행 상황은 <a href="https://github.com/progh2/yutnori/milestones">GitHub Milestones</a>에서 확인할 수 있다.</p>
+      <div class="stage-grid">
+        <div class="stage"><span class="idx">1</span><span class="name">윷말판 렌더링</span><span class="detail"><b>산출물</b> 정적 2D 윷판(20+ 노드, 지름길 표시) · <b>완료 기준</b> 노드 좌표가 전통 윷판과 일치, 지름길 경로가 구분되어 보임</span></div>
+        <div class="stage"><span class="idx">2</span><span class="name">플레이어/봇 설정 화면</span><span class="detail"><b>산출물</b> 인원 선택 UI → 사람/봇 배정 · <b>완료 기준</b> 0/1/2명 선택 시 각각 올바르게 배정되고 게임 시작 가능</span></div>
+        <div class="stage"><span class="idx">3</span><span class="name">턴 방식 윷 던지기 (로직)</span><span class="detail"><b>산출물</b> 버튼 클릭 → 확률표 기반 결과 산출/표시(3D 이전) · <b>완료 기준</b> 결과 분포가 4.2 확률표와 근사 일치</span></div>
+        <div class="stage"><span class="idx">4</span><span class="name">3D 윷 던지기 애니메이션</span><span class="detail"><b>산출물</b> three.js 기반 3D 윷가락 애니메이션 · <b>완료 기준</b> 애니메이션 후 3단계 로직과 동일한 결과를 시각적으로 재현</span></div>
+        <div class="stage"><span class="idx">5</span><span class="name">말 이동 로직</span><span class="detail"><b>산출물</b> 기본 전진/후퇴, 지름길 선택 UI · <b>완료 기준</b> 지정된 칸 수만큼 정확히 이동, 지름길 선택 시 정확한 경로로 이동</span></div>
+        <div class="stage"><span class="idx">6</span><span class="name">업기 로직</span><span class="detail"><b>산출물</b> 같은 칸 도착 시 자동 병합 · <b>완료 기준</b> 병합된 말이 하나의 유닛으로 함께 이동/표시됨</span></div>
+        <div class="stage"><span class="idx">7</span><span class="name">잡기 & 추가 턴</span><span class="detail"><b>산출물</b> 상대 말 리셋 + 추가 턴 큐 처리 · <b>완료 기준</b> 잡기 시 상대 말이 정확히 복귀, 추가 턴 누적 동작 확인</span></div>
+        <div class="stage"><span class="idx">8</span><span class="name">봇 AI & 시각화</span><span class="detail"><b>산출물</b> 랜덤 유효 선택 전략 + 선택 과정 하이라이트 · <b>완료 기준</b> 전원 봇 모드에서 관전만으로 게임이 끝까지 자동 진행됨</span></div>
+        <div class="stage"><span class="idx">9</span><span class="name">승리 조건 & 통합 테스트</span><span class="detail"><b>산출물</b> 전체 게임 통합, 승리 처리 및 재시작 UI · <b>완료 기준</b> 2개 말 완주 시 즉시 승리 화면, 처음부터 끝까지 버그 없이 1판 플레이 가능</span></div>
+      </div>
+    </section>
+
+    <section id="s9">
+      <h2><span class="num">09</span>완료 기준 (Definition of Done)</h2>
+      <ul class="dod">
+        <li><input type="checkbox" disabled> 위 9단계가 모두 하나의 최종 Artifact에 통합되어 동작</li>
+        <li><input type="checkbox" disabled> 사람 2명 / 사람 1명+봇 1명 / 봇 2명 조합 모두 정상 플레이 가능</li>
+        <li><input type="checkbox" disabled> 전통 규칙(지름길, 업기, 잡기, 추가 턴, 빽도)이 모두 반영됨</li>
+        <li><input type="checkbox" disabled> 3D 윷 던지기 애니메이션이 정상 동작하며 결과와 일치</li>
+        <li><input type="checkbox" disabled> 멘토가 이 문서만으로 게임 규칙과 아키텍처를 이해할 수 있음</li>
+      </ul>
+    </section>
+
+    <section id="s10">
+      <h2><span class="num">10</span>리스크 & 오픈 이슈</h2>
+      <ul>
+        <li>말판 정확한 노드 좌표/개수는 1단계 구현 시 확정 필요 (현재는 설계 수준 합의)</li>
+        <li>three.js 3D 애니메이션과 2D 말판 UI 간 전환 연출 방식은 4단계에서 구체화</li>
+        <li>봇 전략은 1차로 랜덤 선택만 구현, 고도화(휴리스틱 등)는 범위 밖으로 간주</li>
+      </ul>
+      <h3>10.1 설계 결정 근거</h3>
+      <ul>
+        <li><strong>빽도 확률 분리</strong> — 실제 윷놀이는 지역/윷가락 형태에 따라 빽도 발생 방식이 다르나, 본 프로젝트는 이항분포 기반 단순 모델에 빽도를 별도 확률로 얹는 방식을 채택 (구현 단순화 목적)</li>
+        <li><strong>추가 턴 누적 방식</strong> — 윷/모와 잡기가 동시에 발생하면 추가 턴을 누적(합산) 처리 — 일부 실제 규칙과 다를 수 있으나 구현/테스트 단순성을 위해 채택</li>
+        <li><strong>봇 시각화</strong> — 전원 봇 모드에서도 학습 목적(턴 방식 진행 시연)을 살리기 위해 각 턴의 의사결정 과정을 사람이 보는 것과 동일하게 노출</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>사이버 윷놀이 · PRD</span>
+    <span><a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a></span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'neutral',
+    securityLevel: 'loose'
+  });
+</script>
+</body>
+</html>
