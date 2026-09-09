@@ -262,7 +262,7 @@
     <div class="hud-center-top">
       <div class="panel player-bar" id="player-bar"></div>
     </div>
-    <p class="hint-line">우클릭 드래그로 시점 회전 · 턴마다 카메라가 자동으로 연출됩니다</p>
+    <p class="hint-line">우클릭 드래그(터치는 한 손가락)로 시점 회전 · 휠/핀치로 확대·축소</p>
     <div class="spectator-banner" id="spectator-banner" hidden>
       👀 관전 모드 — 자동 진행 로직은 8단계에서 구현 예정, 지금은 버튼으로 직접 진행합니다.
     </div>
@@ -717,10 +717,13 @@
 
     const api = {
       group, bob, joints, design,
+      charName: design.name + (variant === 1 ? ' II' : ''),
       poseTarget: Object.assign({}, IDLE),
       walking: false,
       walkPhase: 0,
       facing: 0,
+      headExtra: 0,
+      getHeadWorldPosition(out){ return head.getWorldPosition(out); },
 
       setPose(name){
         this.poseTarget = Object.assign({}, IDLE, POSES[name] || {});
@@ -878,6 +881,7 @@
     scene.add(flag);
 
     // ---- characters / pieces ----
+    const PLAYER_COLORS = [0xf2b134, 0xd94f8c];
     const pieceMeshes = [];
     function benchPos(owner, idx){ return [4+1.5+owner*1.3, 4-idx*1.1]; }
     function finishPos(owner, idx){ return [-(4+1.5+owner*1.3), -(4-idx*1.1)]; }
@@ -886,6 +890,18 @@
         const c = makeCharacter(owner, idx);
         const [x,z] = benchPos(owner, idx);
         c.group.position.set(x,0,z);
+        // all four are different characters, so a team-coloured ring at their
+        // feet is what actually tells you whose piece is whose
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(0.32, 0.042, 8, 28),
+          new THREE.MeshStandardMaterial({
+            color: PLAYER_COLORS[owner], emissive: PLAYER_COLORS[owner],
+            emissiveIntensity: 0.4, roughness: 0.4,
+          })
+        );
+        ring.rotation.x = Math.PI/2;
+        ring.position.y = 0.035;
+        c.group.add(ring);
         scene.add(c.group);
         pieceMeshes.push(Object.assign(c, { owner, idx, slot:'bench:'+owner+':'+idx }));
       }
@@ -956,16 +972,48 @@
       camera.position.set(c.x + Math.sin(titleAngle)*3.4, 1.7, c.z + Math.cos(titleAngle)*3.4);
       lookAt.set(c.x, 0.15, c.z);
       camera.lookAt(lookAt);
-      const wave = Math.sin(now/1100) > 0.25;
-      pieceMeshes.forEach((p,i) => {
-        p.setPose((i % 2 === 0) === wave ? 'cheer' : 'idle');
-        p.setExpression('happy');
+      updateTitleChatter(now, dt);
+    }
+
+    // ---- title screen: the four of them stand around chatting ----
+    // bench layout puts them in two facing columns, so [0]↔[2] and [1]↔[3]
+    // are the natural pairs. Each pair swaps speaker on its own random timer.
+    const CHAT_PAIRS = [[0,2],[1,3]];
+    const chat = CHAT_PAIRS.map((_, i) => ({ timer: 0.6 + i*0.9, speaker: i % 2 }));
+    function updateTitleChatter(now, dt){
+      CHAT_PAIRS.forEach((pair, pi) => {
+        const st = chat[pi];
+        st.timer -= dt;
+        if (st.timer <= 0){
+          st.timer = 1.6 + Math.random()*2.4;
+          st.speaker = Math.random() < 0.45 ? st.speaker : 1 - st.speaker;
+        }
+        pair.forEach((mi, k) => {
+          const me = pieceMeshes[mi], other = pieceMeshes[pair[1-k]];
+          if (!me || !other) return;
+          me.faceTowards(other.group.position.x - me.group.position.x,
+                         other.group.position.z - me.group.position.z);
+          const speaking = k === st.speaker;
+          // a gesture now and then while talking; a nod while listening
+          me.setPose(speaking && Math.sin(now/620 + mi*2) > 0.75 ? 'cheer' : 'idle');
+          me.setExpression(speaking ? 'neutral' : 'happy');
+          if (me.setTalking) me.setTalking(speaking, now + mi*300);
+          if ('headExtra' in me){
+            me.headExtra = speaking ? Math.sin(now/420 + mi)*0.05
+                                    : 0.1 + Math.sin(now/300 + mi)*0.09;
+          }
+        });
       });
     }
     function exitTitleMode(){
       if (!titleMode) return Promise.resolve();
       titleMode = false;
-      pieceMeshes.forEach(p => { p.setPose('idle'); p.setExpression('neutral'); });
+      pieceMeshes.forEach(p => {
+        p.setPose('idle');
+        p.setExpression('neutral');
+        if (p.setTalking) p.setTalking(false, 0);
+        if ('headExtra' in p) p.headExtra = 0;
+      });
       return toOverview();
     }
     function focusOnPlayer(owner){
@@ -979,6 +1027,15 @@
       const camPos = new THREE.Vector3(worldPos.x, worldPos.y + distance*0.55, worldPos.z + distance);
       return tweenCamera(camPos, worldPos.clone(), 550);
     }
+    // tight on the face, so the reaction actually reads
+    function focusOnFace(piece){
+      const head = new THREE.Vector3();
+      if (piece.getHeadWorldPosition) piece.getHeadWorldPosition(head);
+      else head.copy(piece.group.position).add(new THREE.Vector3(0, 1.25, 0));
+      const yaw = piece.group.rotation.y;
+      const camPos = head.clone().add(new THREE.Vector3(Math.sin(yaw)*0.98, 0.05, Math.cos(yaw)*0.98));
+      return tweenCamera(camPos, head, 620);
+    }
     function screenPosFor(vec3){
       const v = vec3.clone().project(camera);
       const rect = renderer.domElement.getBoundingClientRect();
@@ -989,24 +1046,63 @@
     // scripted camera framing currently is, so free-look and the cinematic
     // tweens never fight each other) ----
     const spherical = new THREE.Spherical();
+    const MIN_DIST = 1.1, MAX_DIST = 26;
     let dragging = false, lastX=0, lastY=0;
-    renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
-    renderer.domElement.addEventListener('pointerdown', e => {
-      if (e.button !== 2) return;
-      dragging = true; lastX=e.clientX; lastY=e.clientY;
+    const pointers = new Map();
+    let pinchDist = null;
+
+    function orbitBy(dx, dy){
       spherical.setFromVector3(camera.position.clone().sub(lookAt));
-    });
-    window.addEventListener('pointermove', e => {
-      if (!dragging) return;
-      const dx=e.clientX-lastX, dy=e.clientY-lastY;
-      lastX=e.clientX; lastY=e.clientY;
       spherical.theta -= dx*0.006;
       spherical.phi = Math.min(Math.PI*0.85, Math.max(Math.PI*0.12, spherical.phi - dy*0.006));
-      const offset = new THREE.Vector3().setFromSpherical(spherical);
-      camera.position.copy(lookAt).add(offset);
+      camera.position.copy(lookAt).add(new THREE.Vector3().setFromSpherical(spherical));
       camera.lookAt(lookAt);
+    }
+    function zoomBy(factor){
+      const offset = camera.position.clone().sub(lookAt);
+      const next = Math.min(MAX_DIST, Math.max(MIN_DIST, offset.length() * factor));
+      camera.position.copy(lookAt).add(offset.setLength(next));
+      camera.lookAt(lookAt);
+    }
+
+    const dom = renderer.domElement;
+    dom.style.touchAction = 'none';
+    dom.addEventListener('contextmenu', e => e.preventDefault());
+
+    dom.addEventListener('pointerdown', e => {
+      pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+      // right button on a mouse, or a single finger on touch, orbits
+      if (e.button === 2 || e.pointerType === 'touch'){
+        dragging = true; lastX = e.clientX; lastY = e.clientY;
+      }
     });
-    window.addEventListener('pointerup', e => { if (e.button===2) dragging=false; });
+    window.addEventListener('pointermove', e => {
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+
+      if (pointers.size >= 2){
+        dragging = false;
+        const [a, b] = [...pointers.values()];
+        const d = Math.hypot(a.x-b.x, a.y-b.y);
+        if (pinchDist != null && d > 0) zoomBy(pinchDist / d);
+        pinchDist = d;
+        return;
+      }
+      if (!dragging) return;
+      orbitBy(e.clientX - lastX, e.clientY - lastY);
+      lastX = e.clientX; lastY = e.clientY;
+    });
+    function endPointer(e){
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinchDist = null;
+      if (pointers.size === 0) dragging = false;
+    }
+    window.addEventListener('pointerup', endPointer);
+    window.addEventListener('pointercancel', endPointer);
+
+    dom.addEventListener('wheel', e => {
+      e.preventDefault();
+      zoomBy(e.deltaY > 0 ? 1.12 : 1/1.12);
+    }, { passive: false });
 
     // ---- sticks thrown in-scene near the active character ----
     const STICK_LEN=0.5, STICK_W=0.075, STICK_H=0.06;
@@ -1141,9 +1237,9 @@
     requestAnimationFrame(tick);
 
     return {
-      pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, toOverview,
-      screenPosFor, movePiece, focusPoint, throwSticksNear, hideSticks, restackSlot,
-      exitTitleMode, camera,
+      pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, focusOnFace,
+      toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear, hideSticks,
+      restackSlot, exitTitleMode, camera,
     };
   }
 </script>
@@ -1189,9 +1285,14 @@
       const badge = document.createElement('span');
       const isActive = i === state.currentPlayerIndex;
       badge.className = 'player-badge p'+i+(isActive?' active':'');
-      const idol = CHARACTER_DESIGNS[i].name;
+      const names = board3d.pieceMeshes
+        .filter(pm => pm.owner === i)
+        .map(pm => pm.charName || '')
+        .filter(Boolean)
+        .join('·');
       badge.innerHTML = '<span class="avatar">'+(p.type==='human'?'🧑':'🤖')+'</span><span>'
-        + (isActive?'<span class="turn-flag">▶</span>':'') + p.name + ' ' + idol + ' · '
+        + (isActive?'<span class="turn-flag">▶</span>':'') + p.name
+        + (names ? ' ' + names : '') + ' · '
         + (p.type==='human'?'사람':'봇') + '</span>';
       bar.appendChild(badge);
     });
@@ -1224,12 +1325,18 @@
     pieceMesh.setPose('idle');
   }
 
-  function showReaction(owner, emoji){
+  function showReaction(pieceMesh, emoji){
     const bubble = document.getElementById('reaction-bubble');
-    const p = board3d.focusPoint(owner);
-    const pos = board3d.screenPosFor(new THREE.Vector3(p.x, 1.7, p.z));
-    bubble.style.left = pos.x+'px';
-    bubble.style.top = pos.y+'px';
+    const head = new THREE.Vector3();
+    if (pieceMesh.getHeadWorldPosition) pieceMesh.getHeadWorldPosition(head);
+    else head.copy(pieceMesh.group.position).add(new THREE.Vector3(0, 1.4, 0));
+    head.y += 0.3;
+    const pos = board3d.screenPosFor(head);
+    // during a tight close-up the point above her head can project off-screen,
+    // so keep the bubble inside the viewport
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    bubble.style.left = clamp(pos.x, 60, window.innerWidth - 60) + 'px';
+    bubble.style.top = clamp(pos.y, 90, window.innerHeight - 200) + 'px';
     bubble.textContent = emoji;
     bubble.classList.add('show');
   }
@@ -1273,7 +1380,6 @@
     thrower.setPose('idle');
 
     await wait(350);
-    await board3d.focusOnPlayer(owner);
     board3d.hideSticks();
 
     document.getElementById('result-name').textContent = outcome.result;
@@ -1288,8 +1394,13 @@
     renderHistory();
 
     const piece = pickPieceToMove(owner, outcome.steps);
-    showReaction(owner, reactionEmojiFor(outcome.category));
+
+    // straight from the sticks onto her face, so the reaction lands close-up
     setPieceExpression(thrower, outcome.category);
+    await board3d.focusOnFace(thrower);
+    showReaction(thrower, reactionEmojiFor(outcome.category));
+    await wait(1100);
+    hideReaction();   // the camera is about to move, so let the bubble go first
 
     if (piece){
       const pieceMesh = board3d.pieceMeshes.find(pm => pm.owner===piece.owner && pm.idx===piece.idx);
@@ -1306,8 +1417,7 @@
       await wait(500);
     }
 
-    await wait(500);
-    hideReaction();
+    await wait(350);
     board3d.pieceMeshes.filter(pm => pm.owner === owner).forEach(resetPieceExpression);
     await board3d.toOverview();
 
@@ -1331,7 +1441,14 @@
 
   window.THREE = THREE;
 
-  const MODEL_URLS = ['./models/shino.vrm', './models/vivi.vrm'];
+  // four different idols — one per piece, so nobody has a twin on the board.
+  // Team membership is shown by the coloured ring at their feet instead.
+  const IDOLS = [
+    [ { url:'./models/shino.vrm',    name:'시노' },
+      { url:'./models/vita.vrm',     name:'비타' } ],
+    [ { url:'./models/vivi.vrm',     name:'비비' },
+      { url:'./models/victoria.vrm', name:'빅토리아' } ],
+  ];
   const TARGET_HEIGHT = 1.5;
 
   const loadingEl = document.getElementById('loading');
@@ -1358,9 +1475,10 @@
   function slerpBone(bone, target, k){ if (bone) bone.quaternion.slerp(target, k); }
 
   const VRM_POSES = {
-    idle:    { armDown: 1.3,  armSwing: 0.05, elbow: 0.30, torso: 0.00, head: 0.00 },
-    windup:  { armDown: 1.0,  armSwing: 2.30, elbow: 0.80, torso:-0.14, head:-0.12 },
-    release: { armDown: 1.0,  armSwing:-1.50, elbow: 0.15, torso: 0.24, head: 0.12 },
+    idle:    { armDown: 1.30, armSwing: 0.05, elbow: 0.30, torso: 0.00, head: 0.00 },
+    // a compact underhand wind-up rather than throwing the arms overhead
+    windup:  { armDown: 1.15, armSwing: 1.00, elbow: 0.65, torso:-0.07, head:-0.05 },
+    release: { armDown: 1.10, armSwing:-0.95, elbow: 0.20, torso: 0.16, head: 0.08 },
     cheer:   { armDown:-0.70, armSwing:-0.20, elbow: 0.30, torso:-0.06, head:-0.12 },
     droop:   { armDown: 1.40, armSwing: 0.15, elbow: 0.12, torso: 0.20, head: 0.30 },
   };
@@ -1375,7 +1493,7 @@
   };
   const EXPRESSION_KEYS = ['happy','sad','angry','relaxed','surprised','aa','oh','ih','ee','ou'];
 
-  function wrapVrm(vrm){
+  function wrapVrm(vrm, charName){
     const group = new THREE.Group();
     group.add(vrm.scene);
 
@@ -1396,12 +1514,32 @@
     let nextBlink = 1 + Math.random()*4;
     let blinkT = -1;
 
+    const rawHead = vrm.humanoid.getRawBoneNode
+      ? vrm.humanoid.getRawBoneNode('head')
+      : vrm.humanoid.getBoneNode && vrm.humanoid.getBoneNode('head');
+
     return {
-      group, joints, vrm,
+      group, joints, vrm, charName,
       pose: VRM_POSES.idle,
-      walking: false, walkPhase: 0, facing: 0,
+      walking: false, walkPhase: 0, facing: 0, headExtra: 0, talking: false,
 
       setPose(name){ this.pose = VRM_POSES[name] || VRM_POSES.idle; },
+      getHeadWorldPosition(out){
+        if (rawHead) rawHead.getWorldPosition(out);
+        else out.copy(group.position).add(new THREE.Vector3(0, 1.3, 0));
+        return out;
+      },
+      // mouth flaps through the VRM vowel shapes so title-screen small talk reads
+      setTalking(on, now){
+        this.talking = on;
+        const m = vrm.expressionManager;
+        if (!m) return;
+        try {
+          if (!on){ m.setValue('aa', 0); m.setValue('ih', 0); return; }
+          m.setValue('aa', Math.abs(Math.sin(now/95)) * 0.65);
+          m.setValue('ih', Math.abs(Math.sin(now/150)) * 0.25);
+        } catch (e) {}
+      },
       faceTowards(dx, dz){
         if (Math.abs(dx) < 1e-4 && Math.abs(dz) < 1e-4) return;
         this.facing = Math.atan2(dx, dz);
@@ -1442,7 +1580,7 @@
         slerpBone(joints.kneeL, qT.setFromAxisAngle(AX_X, kneeL), k);
         slerpBone(joints.kneeR, qT.setFromAxisAngle(AX_X, kneeR), k);
         slerpBone(joints.torso, qT.setFromAxisAngle(AX_X, p.torso), k);
-        slerpBone(joints.head, qT.setFromAxisAngle(AX_X, p.head), k);
+        slerpBone(joints.head, qT.setFromAxisAngle(AX_X, p.head + (this.headExtra || 0)), k);
 
         // idle blinking
         nextBlink -= dt;
@@ -1475,11 +1613,12 @@
     for (let owner = 0; owner < 2; owner++){
       const instances = [];
       for (let idx = 0; idx < 2; idx++){
-        const gltf = await loader.loadAsync(MODEL_URLS[owner], evt => {
+        const idol = IDOLS[owner][idx];
+        const gltf = await loader.loadAsync(idol.url, evt => {
           if (evt.total) setProgress((done + evt.loaded/evt.total) / 4);
         });
         const vrm = gltf.userData.vrm;
-        if (!vrm) throw new Error('not a VRM: ' + MODEL_URLS[owner]);
+        if (!vrm) throw new Error('not a VRM: ' + idol.url);
         if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
         if (VRMUtils.combineSkeletons) VRMUtils.combineSkeletons(gltf.scene);
         if (VRMUtils.rotateVRM0) VRMUtils.rotateVRM0(vrm);   // VRM 0.x faces -Z otherwise
@@ -1487,7 +1626,7 @@
           o.frustumCulled = false;
           if (o.isMesh) o.castShadow = true;
         });
-        instances.push(wrapVrm(vrm));
+        instances.push(wrapVrm(vrm, idol.name));
         done++;
         setProgress(done / 4);
       }

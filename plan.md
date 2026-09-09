@@ -326,10 +326,14 @@ sequenceDiagram
 
 말(캐릭터)은 **VRoid 프로젝트(pixiv)가 공개한 VRM 공식 샘플 모델** 2종을 사용한다.
 
-| 플레이어 | 캐릭터 | 파일 |
+말은 총 4개(플레이어당 2개)이고 **모두 서로 다른 캐릭터**를 쓴다. 어느 팀 말인지는 발밑의 팀 색상 링(P1 금색 / P2 분홍)으로 구분한다.
+
+| 말 | 캐릭터 | 파일 |
 |---|---|---|
-| P1 | 千駄ヶ谷篠 (Sendagaya Shino) | `docs/models/shino.vrm` |
-| P2 | ビビ (Vivi / AvatarSample_E) | `docs/models/vivi.vrm` |
+| P1 첫째 | 千駄ヶ谷篠 (Sendagaya Shino) | `docs/models/shino.vrm` |
+| P1 둘째 | ヴィータ (Vita) | `docs/models/vita.vrm` |
+| P2 첫째 | ビビ (Vivi) | `docs/models/vivi.vrm` |
+| P2 둘째 | ヴィクトリア (Victoria) | `docs/models/victoria.vrm` |
 
 두 파일 모두 VRM 메타데이터에 `redistribution=allow`, `modification=allow`, 상업이용 허용, 크레딧 불필요가 명시되어 있어 공개 저장소 커밋이 가능하다 (상세: `docs/models/README.md`). 원본 14.9/17.9MB를 텍스처만 재인코딩해 각 6.2MB로 줄였다.
 
