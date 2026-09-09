@@ -69,6 +69,9 @@
     font-size: 15px; cursor: pointer; flex:none;
   }
   .audio-toggle:hover{ border-color: var(--gold); }
+  .audio-toggle.on{ border-color: var(--gold); color: var(--gold); }
+  #speed-toggle{ width:auto; padding:0 12px; font-size:12px; font-family:"Jua",sans-serif; }
+  .hud-buttons{ display:flex; gap:8px; align-items:center; }
 
   .hud-center-top{ display:flex; justify-content:center; padding: 4px 12px; }
   .player-bar{ display:flex; gap:12px; align-items:center; padding: 8px 16px; }
@@ -169,32 +172,32 @@
   /* ---- setup screen ---- */
   #screen-setup .hud{ align-items:center; justify-content:flex-end; }
   .setup-card{
-    margin-bottom: 8vh;
-    background: var(--glass); backdrop-filter: blur(8px);
+    margin-bottom: 3vh;
+    background: rgba(10,40,32,.42); backdrop-filter: blur(7px);
     border: 1px solid rgba(251,241,217,.2);
-    border-radius: 24px; padding: 24px 26px;
+    border-radius: 22px; padding: 16px 20px 18px;
     box-shadow: var(--shadow);
-    width: min(92vw, 460px);
-    display:flex; flex-direction:column; align-items:center; gap:18px;
+    width: min(94vw, 430px);
+    display:flex; flex-direction:column; align-items:center; gap:12px;
   }
   .setup-card .title{
-    font-family:"Black Han Sans","Noto Sans KR",sans-serif; font-size: clamp(24px,5vw,34px);
-    text-align:center; text-shadow: 0 2px 0 rgba(0,0,0,.3);
+    font-family:"Black Han Sans","Noto Sans KR",sans-serif; font-size: clamp(22px,4.4vw,30px);
+    text-align:center; text-shadow: 0 2px 0 rgba(0,0,0,.3); line-height:1.1;
   }
   .setup-card .tagline{
     font-family:"Jua",sans-serif; font-size:12.5px; color:var(--ink-muted);
     margin:-10px 0 0; text-align:center;
   }
-  .setup-card .ask{ font-family:"Jua",sans-serif; font-size:15px; text-align:center; }
+  .setup-card .ask{ font-family:"Jua",sans-serif; font-size:14px; text-align:center; margin:0; }
   .choices{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; width:100%; }
   .choice{
     background: rgba(251,241,217,.08); border:2px solid rgba(251,241,217,.22);
-    border-radius:16px; padding: 12px 8px 10px; display:flex; flex-direction:column;
+    border-radius:14px; padding: 9px 6px 8px; display:flex; flex-direction:column;
     align-items:center; gap:6px; cursor:pointer; font-family:"Jua",sans-serif;
     color: var(--ink-light); transition: transform .15s ease, border-color .15s ease, background .15s ease;
   }
   .choice:hover, .choice:focus-visible{ transform: translateY(-3px); border-color: var(--gold); background: rgba(242,177,52,.14); outline:none; }
-  .choice .vs{ font-size:24px; line-height:1; }
+  .choice .vs{ font-size:20px; line-height:1; }
   .choice .label{ font-size:13px; }
   .choice .tag{ font-size:10px; color: var(--ink-muted); }
 
@@ -266,15 +269,18 @@
   .impact-text.tone-jackpot{ color:#c8ffcf; text-shadow:0 10px 0 rgba(6,42,18,.45), 0 0 52px rgba(120,255,160,.9); }
   .impact-text.tone-red{ color:#ffd2cc; -webkit-text-stroke-color:#5a0f08; text-shadow:0 10px 0 rgba(90,15,8,.5), 0 0 48px rgba(255,90,70,.9); }
   .impact-sub{
-    font-family:"Jua",sans-serif; font-size: clamp(15px, 2.6vw, 24px);
-    color:#fdf6e3; text-shadow:0 2px 6px rgba(0,0,0,.9);
-    transform: translateY(14px); opacity:0;
+    font-family:"Black Han Sans","Jua",sans-serif; font-size: clamp(20px, 3.6vw, 38px);
+    color:#fff3cf; -webkit-text-stroke:3px #3a2107; paint-order:stroke fill;
+    text-shadow:0 4px 0 rgba(58,33,7,.4), 0 0 24px rgba(255,217,138,.7);
+    transform: translateX(-40vw) rotate(-6deg); opacity:0; white-space:nowrap;
   }
-  .impact.go .impact-sub{ animation: impact-sub .95s ease-out .16s forwards; }
+  .impact.go .impact-sub{ animation: impact-sub 1.1s cubic-bezier(.14,1.5,.3,1) .1s forwards; }
   @keyframes impact-sub{
-    0%{ transform:translateY(16px); opacity:0; }
-    30%{ transform:translateY(0); opacity:1; }
-    80%{ opacity:1; } 100%{ opacity:0; }
+    0%{   transform:translateX(-40vw) rotate(-8deg); opacity:0; }
+    34%{  transform:translateX(0) rotate(2deg); opacity:1; }
+    48%{  transform:translateX(0) rotate(0deg); opacity:1; }
+    78%{  opacity:1; }
+    100%{ transform:translateX(0) translateY(-26px) rotate(0deg); opacity:0; }
   }
   .impact-burst{
     position:absolute; width:34vmin; height:34vmin; border-radius:50%;
@@ -360,6 +366,14 @@
     box-shadow:0 6px 0 #b8791a, 0 8px 16px -4px rgba(0,0,0,.4);
   }
   .go-again:hover{ transform:translateY(-2px); }
+  .go-actions{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; align-items:center; }
+  .go-menu{
+    margin-top:24px; font-family:"Jua",sans-serif; font-size:14px;
+    color:var(--ink-light); background:rgba(251,241,217,.12);
+    border:1px solid rgba(251,241,217,.32); border-radius:999px;
+    padding:12px 22px; cursor:pointer;
+  }
+  .go-menu:hover{ border-color:var(--gold); color:var(--gold); }
   @media (prefers-reduced-motion: reduce){
     .gameover.go .go-win, .gameover.go .go-lose, .gameover.go .go-name.lose{ animation:none; opacity:1; transform:none; }
   }
@@ -432,7 +446,11 @@
     <div class="hud-top">
       <div class="brand"><h1>✨ 별밭 윷놀이</h1></div>
       <div class="stagebar"><span class="pill">STAGE 9 / 9</span><span>규칙 전체 구현</span></div>
-      <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기">🔊</button>
+      <div class="hud-buttons">
+        <button class="audio-toggle" id="speed-toggle" onclick="toggleSpeed()" title="연출 속도">⏩ 1x</button>
+        <button class="audio-toggle on" id="voice-toggle" onclick="toggleVoice()" title="캐릭터 목소리(브라우저 음성합성)">🗣️</button>
+        <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기">🔊</button>
+      </div>
     </div>
     <div class="hud-center-top">
       <div class="panel player-bar" id="player-bar"></div>
@@ -443,12 +461,6 @@
     </div>
 
     <div class="hud-bottom">
-      <div class="panel result-card">
-        <span class="result-name" id="result-name">?</span>
-        <span class="result-steps" id="result-steps">아직 던지지 않았어요</span>
-        <span class="result-extra" id="result-extra" hidden>한 번 더!</span>
-      </div>
-      <div class="throw-history" id="throw-history"></div>
       <button class="throw-btn" id="throw-btn" onclick="takeTurn()">🥢 윷 던지기</button>
       <div class="action-row">
         <button class="reset-link" onclick="showScreen('setup')">← 참가자 다시 선택하기</button>
@@ -476,7 +488,10 @@
     <div class="go-vs">— 완주 —</div>
     <div class="go-lose">LOSE</div>
     <div class="go-name lose" id="go-lose-name"></div>
-    <button class="go-again" onclick="playClick(); restartGame()">한 판 더!</button>
+    <div class="go-actions">
+      <button class="go-again" onclick="playClick(); restartGame()">한 판 더!</button>
+      <button class="go-menu" onclick="playClick(); backToMenu()">처음 화면으로</button>
+    </div>
   </div>
 </div>
 
@@ -521,7 +536,17 @@
       횟수: counts[k],
     })));
   }
-  function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+  // every scripted delay and tween runs through this, so one knob speeds up
+  // the whole turn choreography
+  let TIME_SCALE = 1;
+  function wait(ms){ return new Promise(r => setTimeout(r, ms / TIME_SCALE)); }
+  function toggleSpeed(){
+    TIME_SCALE = TIME_SCALE === 1 ? 2.2 : 1;
+    window.TIME_SCALE = TIME_SCALE;
+    const btn = document.getElementById('speed-toggle');
+    btn.textContent = TIME_SCALE === 1 ? '⏩ 1x' : '⏩ 2x';
+    btn.classList.toggle('on', TIME_SCALE !== 1);
+  }
   function seededRandom(seed){
     let s = seed % 2147483647; if (s<=0) s += 2147483646;
     return function(){ s = (s*16807) % 2147483647; return (s-1)/2147483646; };
@@ -539,7 +564,7 @@
   // Names run 도·개·걸·윷·모 → 뒷… → 찌… → 날… → 참먹이, and every arm of the
   // cross has its own two names (모도/모개 …). Crossing 방 always bends toward
   // 참먹이, which is what makes the 11-step route possible.
-  const RING_R = 6.4;
+  const RING_R = 8.0;
   const RING_N = 20;
 
   function ringPos(i){
@@ -707,12 +732,12 @@
     });
   })();
 
-  function playSample(key, rate){
+  function playSample(key, rate, volScale){
     const def = SAMPLES[key];
     if (!audio.enabled || !def || !sampleReady[key]) return false;
     try {
       const node = def.loop ? def.el : def.el.cloneNode();
-      node.volume = def.vol;
+      node.volume = Math.max(0, Math.min(1, def.vol * (volScale === undefined ? 1 : volScale)));
       node.playbackRate = rate || 1;
       node.currentTime = 0;
       const p = node.play();
@@ -742,6 +767,11 @@
     if (playSample('capture', 0.6)) return;
     playTone(300,{type:'sawtooth',gain:0.12,decay:0.18}); playTone(220,{type:'sawtooth',gain:0.12,decay:0.28,when:0.12});
   }
+  function playBicker(){
+    // the wooden knock, pitched up and quiet — reads as a playful bonk
+    if (playSample('capture', 1.7 + Math.random()*0.3, 0.28)) return;
+    playTone(700 + Math.random()*160, { type:'square', gain:0.05, decay:0.05 });
+  }
   function playFinishChime(){
     if (playSample('chime', 1.15)) return;
     [523.25, 659.25, 783.99].forEach((f,i) => playTone(f, { type:'triangle', gain:0.16, decay:0.4, when:i*0.09 }));
@@ -751,6 +781,49 @@
     [523.25, 659.25, 783.99, 1046.5].forEach((f,i) => playTone(f, { type:'triangle', gain:0.2, decay:0.5, when:i*0.14 }));
     playTone(1318.5, { type:'triangle', gain:0.18, decay:1.0, when:0.6 });
   }
+  // ---- voice: the browser's own speech synthesis, so no audio files and no
+  // licence to worry about. Availability depends on the OS's Korean voices, so
+  // everything here degrades to silence if none are installed. ----
+  const voice = { enabled:true, ko:null };
+  function initVoices(){
+    if (!('speechSynthesis' in window)) return;
+    const pick = () => {
+      const list = speechSynthesis.getVoices() || [];
+      voice.ko = list.find(v => /^ko/i.test(v.lang)) || null;
+    };
+    pick();
+    speechSynthesis.addEventListener('voiceschanged', pick);
+  }
+  const VOICE_TONE = [
+    { pitch:1.0,  rate:0.95 },   // 시노 — 차분
+    { pitch:1.12, rate:1.05 },   // 비타 — 씩씩
+    { pitch:1.5,  rate:1.05 },   // 비비 — 발랄
+    { pitch:0.92, rate:0.9  },   // 빅토리아 — 우아
+  ];
+  const LAUGHS = ['후훗, 후훗', '하하하!', '히히히!', '호호호!'];
+
+  function sayAloud(text, personaIndex){
+    if (!voice.enabled || !audio.enabled) return;
+    if (!('speechSynthesis' in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice.ko) u.voice = voice.ko;
+      u.lang = 'ko-KR';
+      const tone = VOICE_TONE[personaIndex || 0] || VOICE_TONE[0];
+      u.pitch = tone.pitch; u.rate = tone.rate; u.volume = 0.95;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  function laughAloud(personaIndex){ sayAloud(LAUGHS[personaIndex || 0] || LAUGHS[1], personaIndex); }
+  function toggleVoice(){
+    voice.enabled = !voice.enabled;
+    if (!voice.enabled && 'speechSynthesis' in window) speechSynthesis.cancel();
+    const btn = document.getElementById('voice-toggle');
+    btn.textContent = voice.enabled ? '🗣️' : '🤐';
+    btn.classList.toggle('on', voice.enabled);
+  }
+
   const BGM_NOTES = [392.0,440.0,523.25,587.33,659.25,587.33,523.25,440.0];
   function startBGM(){
     if (!audio.enabled) return;
@@ -763,6 +836,7 @@
       audio.bgmStep++;
     }, 420);
   }
+  initVoices();
   function stopBGM(){
     clearInterval(audio.bgmTimer); audio.bgmTimer = null;
     const bgm = SAMPLES.bgm && SAMPLES.bgm.el;
@@ -1035,6 +1109,10 @@
       droop: { shoulderL:[0.32,0,0.03], shoulderR:[0.32,0,-0.03],
                elbowL:[-0.04,0,0], elbowR:[-0.04,0,0],
                torso:[0.22,0,0], head:[0.3,0,0] },
+      holdR: { shoulderR:[0,0,-1.15], elbowR:[-0.05,0,0] },
+      holdL: { shoulderL:[0,0,1.15], elbowL:[-0.05,0,0] },
+      greet: { shoulderR:[0,0,-2.2], elbowR:[-0.4,0,0] },
+      think: { shoulderR:[-1.1,0,-0.5], elbowR:[-1.4,0,0], head:[0.14,0,0] },
     };
 
     const api = {
@@ -1087,7 +1165,7 @@
         }
         // walk cycle overrides legs/arms while moving
         if (this.walking){
-          this.walkPhase += dt * 9;
+          this.walkPhase += dt * 7;
           const p = this.walkPhase;
           joints.hipL.rotation.x = Math.sin(p) * 0.6;
           joints.hipR.rotation.x = -Math.sin(p) * 0.6;
@@ -1120,7 +1198,7 @@
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a2e24);
-    scene.fog = new THREE.Fog(0x0a2e24, 20, 38);
+    scene.fog = new THREE.Fog(0x0a2e24, 26, 48);
     const camera = new THREE.PerspectiveCamera(46, W/H, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
@@ -1138,16 +1216,16 @@
     // than the pre-r155 values that produced the same brightness
     scene.add(new THREE.AmbientLight(0xffe9c7, 2.0));
     const sun = new THREE.DirectionalLight(0xfff3d6, 2.6);
-    sun.position.set(6,13,8); sun.castShadow = true; sun.shadow.mapSize.set(1024,1024);
-    sun.shadow.camera.left = -16; sun.shadow.camera.right = 16;
-    sun.shadow.camera.top = 16; sun.shadow.camera.bottom = -16;
+    sun.position.set(8,17,10); sun.castShadow = true; sun.shadow.mapSize.set(1024,1024);
+    sun.shadow.camera.left = -26; sun.shadow.camera.right = 26;
+    sun.shadow.camera.top = 26; sun.shadow.camera.bottom = -26;
     scene.add(sun);
     // soft fill from the camera side so faces never go flat black
     const fill = new THREE.DirectionalLight(0xdff0ff, 0.9);
     fill.position.set(-3, 4, 9);
     scene.add(fill);
 
-    const table = new THREE.Mesh(new THREE.CircleGeometry(17,64), new THREE.MeshStandardMaterial({ color:0x0b2f26, roughness:0.95 }));
+    const table = new THREE.Mesh(new THREE.CircleGeometry(21,72), new THREE.MeshStandardMaterial({ color:0x0b2f26, roughness:0.95 }));
     table.rotation.x = -Math.PI/2; table.receiveShadow = true; scene.add(table);
 
     // ---- the four 밭, laid out as seasons (docs/yutpan.md) ----
@@ -1159,14 +1237,14 @@
       const a0 = ((f*5 + 0.5) / RING_N) * Math.PI*2;
       const a1 = a0 + (5 / RING_N) * Math.PI*2;
       const sector = new THREE.Mesh(
-        new THREE.RingGeometry(0.95, RING_R + 1.15, 28, 1, -(a1 + Math.PI/2), a1 - a0),
+        new THREE.RingGeometry(1.5, RING_R + 1.8, 32, 1, -(a1 + Math.PI/2), a1 - a0),
         new THREE.MeshStandardMaterial({ color: FIELD_COLORS[f], roughness:0.95 })
       );
       sector.rotation.x = -Math.PI/2;
       sector.position.y = 0.012;
       sector.receiveShadow = true;
       scene.add(sector);
-      const am = (a0 + a1) / 2, ar = RING_R + 1.55;
+      const am = (a0 + a1) / 2, ar = RING_R + 2.3;
       fieldLabelAnchors.push(new THREE.Vector3(-ar*Math.sin(am), 0.08, ar*Math.cos(am)));
     }
 
@@ -1192,6 +1270,9 @@
       g.position.set(node.pos[0], 0, node.pos[1]);
       const rand = seededRandom(hashSeed(id));
       const mat = (c, rough) => new THREE.MeshStandardMaterial({ color:c, roughness: rough === undefined ? 0.75 : rough });
+      // unit vector pointing away from the board centre, for placing props aside
+      const len = Math.hypot(node.pos[0], node.pos[1]) || 1;
+      const outX = node.pos[0] / len, outZ = node.pos[1] / len;
       const CREAM = 0xfbf1d9, GOLD = 0xf2b134, RED = 0xe0473a, GRASS = 0x7ab648, SLAB = 0xe6d9b8, WOOD = 0x8a5a34;
 
       if (node.animal === 'pig'){                    // 도 — a small round stone
@@ -1221,23 +1302,30 @@
         const m = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.1, 0.32), mat(SLAB));
         m.position.y = 0.05; m.rotation.y = (rand()-0.5)*0.4;
         m.receiveShadow = true; g.add(m);
-      } else if (node.animal === 'horse'){           // 모 — a tall corner pillar
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.37, 0.1, 10), mat(GOLD, 0.6));
+      } else if (node.animal === 'horse'){           // 모 — a corner marker post
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.39, 0.1, 12), mat(GOLD, 0.6));
         base.position.y = 0.05; base.receiveShadow = true; g.add(base);
-        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.135, 0.6, 8), mat(GOLD, 0.55));
-        pillar.position.y = 0.4; pillar.castShadow = true; g.add(pillar);
-        const cap = new THREE.Mesh(new THREE.OctahedronGeometry(0.14),
+        // pushed outward so a character can stand on the 밭 without wearing it
+        const out = 0.42;
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.46, 8), mat(GOLD, 0.55));
+        pillar.position.set(outX*out, 0.33, outZ*out); pillar.castShadow = true; g.add(pillar);
+        const cap = new THREE.Mesh(new THREE.OctahedronGeometry(0.12),
           new THREE.MeshStandardMaterial({ color:GOLD, emissive:0x7a5512, emissiveIntensity:0.6, roughness:0.4 }));
-        cap.position.y = 0.78; g.add(cap);
-      } else if (node.animal === 'gate'){            // 참먹이 — the gate you exit through
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.43, 0.1, 12), mat(RED, 0.6));
+        cap.position.set(outX*out, 0.62, outZ*out); g.add(cap);
+      } else if (node.animal === 'gate'){            // 참먹이 — the gate you walk out through
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.45, 0.1, 14), mat(RED, 0.6));
         base.position.y = 0.05; base.receiveShadow = true; g.add(base);
-        [-0.32, 0.32].forEach(dx => {
-          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.07, 0.82, 8), mat(WOOD));
-          post.position.set(dx, 0.46, 0); post.castShadow = true; g.add(post);
+        // posts straddle the 밭 so she passes between them
+        const sideX = -outZ, sideZ = outX;
+        [-0.55, 0.55].forEach(d => {
+          // tall enough for a character to stand under it, not through it
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.075, 1.75, 8), mat(WOOD));
+          post.position.set(sideX*d, 0.92, sideZ*d); post.castShadow = true; g.add(post);
         });
-        const lintel = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.1, 0.13), mat(RED, 0.6));
-        lintel.position.y = 0.9; lintel.castShadow = true; g.add(lintel);
+        const lintel = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.12, 0.16), mat(RED, 0.6));
+        lintel.position.y = 1.84;
+        lintel.rotation.y = Math.atan2(sideX, sideZ);
+        lintel.castShadow = true; g.add(lintel);
       } else if (node.animal === 'star'){            // 방 — 북극성
         const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.48, 0.1, 28), mat(0x2a2a46, 0.6));
         disc.position.y = 0.05; disc.receiveShadow = true; g.add(disc);
@@ -1267,7 +1355,11 @@
       }
 
       // ---- seasonal dressing, so no two 자리 look the same ----
+      node.outX = outX; node.outZ = outZ;
       addSeasonDecor(g, node, rand, mat);
+      // scale the whole prop up to person-scale in one go (the gate is already
+      // tall enough to walk through, so it grows less)
+      g.scale.setScalar(node.animal === 'gate' ? 1.25 : 1.9);
       return g;
     }
 
@@ -1298,7 +1390,7 @@
           deco = new THREE.Mesh(new THREE.OctahedronGeometry(0.04 + rand()*0.025),
             new THREE.MeshStandardMaterial({ color:0xf2f7ff, roughness:0.35, emissive:0x9fc4de, emissiveIntensity:0.2 }));
         }
-        deco.position.set(Math.cos(a)*r, 0.08 + rand()*0.05, Math.sin(a)*r);
+        deco.position.set(Math.cos(a)*r + node.outX*0.22, 0.08 + rand()*0.05, Math.sin(a)*r + node.outZ*0.22);
         g.add(deco);
       }
     }
@@ -1364,12 +1456,12 @@
       for (const L of labels){
         const dist = camera.position.distanceTo(L.pos);
         projected.copy(L.pos).project(camera);
-        const limit = L.field ? 34 : 24;
+        const limit = L.field ? 44 : 30;
         if (projected.z > 1 || dist > limit){ L.el.style.opacity = '0'; continue; }
         const x = rect.left + (projected.x*0.5 + 0.5) * rect.width;
         const y = rect.top + (-projected.y*0.5 + 0.5) * rect.height;
         L.el.style.transform = 'translate(-50%,-50%) translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
-        L.el.style.opacity = String(L.field ? 0.9 : Math.max(0.32, Math.min(1, (limit - dist) / 8)));
+        L.el.style.opacity = String(L.field ? 0.9 : Math.max(0.32, Math.min(1, (limit - dist) / 11)));
       }
     }
 
@@ -1377,8 +1469,8 @@
     const PLAYER_COLORS = [0xf2b134, 0xd94f8c];
     const pieceMeshes = [];
     // they wait in a row just outside 참먹이, and retire to the far side
-    function benchPos(owner, idx){ return [-3.0 + (owner*2 + idx)*2.0, RING_R + 1.9]; }
-    function finishPos(owner, idx){ return [-3.0 + (owner*2 + idx)*2.0, -(RING_R + 2.0)]; }
+    function benchPos(owner, idx){ return [-4.5 + (owner*2 + idx)*3.0, RING_R + 2.8]; }
+    function finishPos(owner, idx){ return [-4.5 + (owner*2 + idx)*3.0, -(RING_R + 3.0)]; }
     for (let owner=0; owner<2; owner++){
       for (let idx=0; idx<2; idx++){
         const c = makeCharacter(owner, idx);
@@ -1401,10 +1493,27 @@
       }
     }
 
+    // Characters stand just off the marker: ring 자리 shift inward toward 방,
+    // spoke 자리 shift sideways, so the prop stays visible next to them.
+    const STAND = {};
+    Object.keys(NODES).forEach(id => {
+      const n = NODES[id];
+      const len = Math.hypot(n.pos[0], n.pos[1]);
+      if (id === 'bang'){ STAND[id] = [0, 0.7]; return; }
+      const ux = n.pos[0]/len, uz = n.pos[1]/len;
+      STAND[id] = n.kind === 'arm'
+        ? [-uz * 0.62, ux * 0.62]       // tangential, alongside the spoke
+        : [-ux * 0.72, -uz * 0.72];     // inward, just inside the ring
+    });
+    function standPos(id){
+      const n = NODE_POS[id], o = STAND[id] || [0,0];
+      return [n[0] + o[0], n[1] + o[1]];
+    }
+
     // Small ring layout so pieces sharing a board node don't overlap.
     function ringOffsets(n){
       if (n<=1) return [[0,0]];
-      const r = 0.24;
+      const r = 0.42;
       return Array.from({length:n}, (_,i) => { const a=(i/n)*Math.PI*2; return [Math.cos(a)*r, Math.sin(a)*r]; });
     }
     function restackSlot(slot, exceptMesh){
@@ -1413,7 +1522,7 @@
       occupants.forEach((p,i) => {
         p.stackOffset = offsets[i];
         if (p !== exceptMesh && !/^(bench|finish):/.test(slot)){
-          const [bx,bz] = NODE_POS[slot];
+          const [bx,bz] = standPos(slot);
           p.group.position.set(bx+p.stackOffset[0], 0, bz+p.stackOffset[1]);
         }
       });
@@ -1422,10 +1531,11 @@
     // ---- animation queue (drives camera tweens + piece hops from one loop) ----
     const animations = [];
     function animate(duration, onUpdate){
-      return new Promise(resolve => { animations.push({ start: performance.now(), duration, onUpdate, resolve }); });
+      const d = Math.max(16, duration / (window.TIME_SCALE || 1));
+      return new Promise(resolve => { animations.push({ start: performance.now(), duration: d, onUpdate, resolve }); });
     }
 
-    const OVERVIEW_POS = new THREE.Vector3(0, 18.5, 18.5);
+    const OVERVIEW_POS = new THREE.Vector3(0, 21.5, 21.5);
     const OVERVIEW_LOOK = new THREE.Vector3(0, 0, 0.8);
     let lookAt = OVERVIEW_LOOK.clone();
     camera.position.copy(OVERVIEW_POS);
@@ -1466,8 +1576,8 @@
       // all the way round (which would end up looking down the line)
       const sway = Math.sin(titleAngle) * 0.55;
       const dist = 7.4;
-      camera.position.set(c.x + Math.sin(sway)*dist, 2.5, c.z + Math.cos(sway)*dist);
-      lookAt.set(c.x, 0.62, c.z);
+      camera.position.set(c.x + Math.sin(sway)*dist, 2.15, c.z + Math.cos(sway)*dist);
+      lookAt.set(c.x, 0.05, c.z);
       camera.lookAt(lookAt);
       updateTitleChatter(now, dt);
     }
@@ -1482,7 +1592,7 @@
         const st = chat[pi];
         st.timer -= dt;
         if (st.timer <= 0){
-          st.timer = 1.6 + Math.random()*2.4;
+          st.timer = 3.4 + Math.random()*2.8;
           st.speaker = Math.random() < 0.45 ? st.speaker : 1 - st.speaker;
         }
         pair.forEach((mi, k) => {
@@ -1492,12 +1602,14 @@
                          other.group.position.z - me.group.position.z);
           const speaking = k === st.speaker;
           // a gesture now and then while talking; a nod while listening
-          me.setPose(speaking && Math.sin(now/620 + mi*2) > 0.75 ? 'cheer' : 'idle');
+          const beat = Math.sin(now/620 + mi*2);
+          me.setPose(speaking ? (beat > 0.75 ? 'cheer' : (beat < -0.8 ? 'greet' : 'idle'))
+                              : (beat > 0.85 ? 'greet' : 'idle'));
           me.setExpression(speaking ? 'neutral' : 'happy');
           if (me.setTalking) me.setTalking(speaking, now + mi*300);
           if (speaking && st.spokeFor !== st.timer){
             st.spokeFor = st.timer;
-            if (window.sayLine) sayLine(me, 'idle', 2400);
+            if (window.sayLine) sayLine(me, 'idle', 4200);
           }
           if ('headExtra' in me){
             me.headExtra = speaking ? Math.sin(now/420 + mi)*0.05
@@ -1505,6 +1617,10 @@
           }
         });
       });
+    }
+    function enterTitleMode(){
+      titleMode = true;
+      titleAngle = 0;
     }
     function exitTitleMode(){
       if (!titleMode) return Promise.resolve();
@@ -1520,7 +1636,7 @@
     function focusOnPlayer(owner){
       const p = focusPoint(owner);
       const dir = owner===0 ? 1 : -1;
-      const camPos = new THREE.Vector3(p.x*0.4+dir*1.7, 2.6, p.z*0.4+3.4);
+      const camPos = new THREE.Vector3(p.x*0.35+dir*1.9, 2.8, p.z*0.35+4.2);
       const look = new THREE.Vector3(p.x, 0.85, p.z);
       return tweenCamera(camPos, look, 750);
     }
@@ -1530,7 +1646,7 @@
     }
     // a medium shot of one character, used to watch her before she throws
     function focusOnPiece(piece, dist){
-      const d = dist === undefined ? 3.0 : dist;
+      const d = dist === undefined ? 3.2 : dist;
       const p = piece.group.position;
       const yaw = piece.group.rotation.y;
       const camPos = new THREE.Vector3(p.x + Math.sin(yaw)*d, 1.9, p.z + Math.cos(yaw)*d);
@@ -1555,7 +1671,7 @@
     // scripted camera framing currently is, so free-look and the cinematic
     // tweens never fight each other) ----
     const spherical = new THREE.Spherical();
-    const MIN_DIST = 1.1, MAX_DIST = 34;
+    const MIN_DIST = 1.1, MAX_DIST = 44;
     let dragging = false, lastX=0, lastY=0;
     const pointers = new Map();
     let pinchDist = null;
@@ -1675,6 +1791,8 @@
     function hideSticks(){ sticks.forEach(m => m.visible = false); }
 
     // ---- piece movement: she walks it, and the camera follows step by step ----
+    // one 밭 is ~2 units apart on this ring, so this is roughly a walking pace
+    const HOP_MS = 900;
     async function movePiece(piece, path, followCamera){
       let cur = piece.group.position.clone();
       piece.walking = true;
@@ -1682,14 +1800,14 @@
       for (const id of path){
         const target = id === 'FINISH'
           ? new THREE.Vector3(...(function(){ const [x,z]=finishPos(piece.owner,piece.idx); return [x,0,z]; })())
-          : new THREE.Vector3(NODE_POS[id][0], 0, NODE_POS[id][1]);
+          : new THREE.Vector3(standPos(id)[0], 0, standPos(id)[1]);
         const from = cur.clone();
         piece.faceTowards(target.x - from.x, target.z - from.z);
-        const jobs = [animate(420, t => { piece.group.position.lerpVectors(from, target, easeInOutCubic(t)); })];
+        const jobs = [animate(HOP_MS, t => { piece.group.position.lerpVectors(from, target, easeInOutCubic(t)); })];
         if (followCamera){
-          const camTarget = new THREE.Vector3(target.x*0.35+2.4, 2.4, target.z*0.35+3.0);
+          const camTarget = new THREE.Vector3(target.x*0.3+3.0, 3.0, target.z*0.3+4.2);
           const lookTarget = new THREE.Vector3(target.x, 0.8, target.z);
-          jobs.push(tweenCamera(camTarget, lookTarget, 420));
+          jobs.push(tweenCamera(camTarget, lookTarget, HOP_MS));
         }
         await Promise.all(jobs);
         playHop();
@@ -1717,23 +1835,49 @@
     }
 
     // ---- crowded squares: they shuffle and squabble at each other ----
-    function applyBickerJitter(now){
+    // Two pieces can only share a 밭 if they're on the same side — landing on an
+    // opponent captures it — so the shared square is 업기, and they're pleased
+    // about it: they stand side by side, hold the inner hand and sway together.
+    let lastBonk = 0, lastGiggle = 0;
+    function applyGroupBehaviour(now){
       const bySlot = {};
       pieceMeshes.forEach(p => { if (!/^(bench|finish):/.test(p.slot)) (bySlot[p.slot] = bySlot[p.slot]||[]).push(p); });
       Object.values(bySlot).forEach(group => {
         if (group.length < 2) return;
+        const friendly = group.every(p => p.owner === group[0].owner);
+        const [bx, bz] = standPos(group[0].slot);
+
+        if (friendly){
+          const pair = group.slice().sort((a,b) => a.group.position.x - b.group.position.x);
+          const beat = Math.sin(now/380);
+          pair.forEach((p, i) => {
+            if (p.walking) return;
+            const side = i === 0 ? -1 : 1;              // -1 on the left
+            p.group.position.x = bx + side*0.42 + beat*0.07;
+            p.group.position.z = bz + Math.cos(now/380)*0.03;
+            p.faceTowards(camera.position.x - p.group.position.x, camera.position.z - p.group.position.z);
+            p.setPose(i === 0 ? 'holdR' : 'holdL');     // reach toward the partner
+            p.setExpression('happy');
+            if (p.bob) p.bob.position.y = Math.abs(beat) * 0.05;
+          });
+          if (now - lastGiggle > 5200){
+            lastGiggle = now;
+            if (window.sayLine) sayLine(pair[Math.floor(Math.random()*2)], 'together', 2400);
+          }
+          return;
+        }
+
+        // mixed owners can only happen on 참먹이 after a 빽도 — let them squabble
+        if (now - lastBonk > 520){ lastBonk = now; if (window.playBicker) playBicker(); }
         group.forEach((p,i) => {
-          if (p.walking) return; // don't fight an in-flight walk tween
+          if (p.walking) return;
           const phase = (i % 2 === 0) ? 0 : Math.PI;
-          const [bx,bz] = NODE_POS[p.slot];
           const [ox,oz] = p.stackOffset || [0,0];
           p.group.position.x = bx + ox + Math.sin(now/150 + phase) * 0.055;
           p.group.position.z = bz + oz + Math.cos(now/150 + phase) * 0.03;
-          // face the neighbour and flail a little
           const other = group[(i+1) % group.length];
           p.faceTowards(other.group.position.x - p.group.position.x, other.group.position.z - p.group.position.z);
-          p.joints.shoulderL.rotation.x = -1.1 + Math.sin(now/90 + phase) * 0.5;
-          p.joints.shoulderR.rotation.x = -1.1 - Math.sin(now/90 + phase) * 0.5;
+          p.setPose('greet');
         });
       });
     }
@@ -1749,7 +1893,7 @@
       pieceMeshes.forEach(p => {
         if (!p.walking) p.faceTowards(camera.position.x - p.group.position.x, camera.position.z - p.group.position.z);
       });
-      if (!titleMode) applyBickerJitter(now);
+      if (!titleMode) applyGroupBehaviour(now);
       pieceMeshes.forEach(p => p.tickAnim(now, dt));
       updateLabels();
       updateBubbles(now);
@@ -1766,7 +1910,7 @@
     return {
       pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, focusOnFace,
       focusOnPiece, toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear,
-      hideSticks, restackSlot, exitTitleMode, camera, sendHome, speak, hushAll,
+      hideSticks, restackSlot, exitTitleMode, enterTitleMode, camera, sendHome, speak, hushAll,
     };
   }
 </script>
@@ -1835,7 +1979,8 @@
     document.getElementById('spectator-banner').hidden = !state.players.every(p => p.type==='bot');
   }
   function renderHistory(){
-    document.getElementById('throw-history').innerHTML = state.history.map(r => '<span class="history-chip">'+r+'</span>').join('');
+    const box = document.getElementById('throw-history');
+    if (box) box.innerHTML = state.history.map(r => '<span class="history-chip">'+r+'</span>').join('');
   }
   // ================= 대사: 캐릭터마다 성격이 다른 말 =================
   const SPEECH_LINES = [
@@ -1848,6 +1993,7 @@
       capture:['미안해요, 규칙이니까요.', '자리를 비워주시겠어요?'],
       caught: ['어머, 제가 방심했네요.', '처음부터 다시 세우죠.'],
       finish: ['먼저 들어가 있을게요.'],
+      together:['같이 가면 든든하네요.', '손 잡고 가요.'],
       win:    ['모두 수고했어요.'],
       lose:   ['다음엔 이길 거예요.'],
     },
@@ -1860,6 +2006,7 @@
       capture:['미안, 내가 지나간다!', '비켜줄래?'],
       caught: ['아아아 내 자리!', '이건 반칙이야!'],
       finish: ['1등으로 도착!'],
+      together:['같이 가자, 손!', '둘이면 두 배로 빠르지!'],
       win:    ['내가 최고야!'],
       lose:   ['다음엔 안 봐줘!'],
     },
@@ -1872,6 +2019,7 @@
       capture:['잡았다! 히히', '앗, 미안해!'],
       caught: ['우엥 잡혔어!', '처음부터 다시야…'],
       finish: ['나 도착했어!'],
+      together:['히히 같이 가자!', '손 잡으니까 좋다!'],
       win:    ['이겼다! 야호!'],
       lose:   ['다음엔 내가 이길 거야!'],
     },
@@ -1884,17 +2032,22 @@
       capture:['실례하겠습니다.', '조금 비켜주시겠어요?'],
       caught: ['어머나!', '이건 예상 밖이에요.'],
       finish: ['먼저 도착했어요.'],
+      together:['함께 가시겠어요?', '손을 잡아도 될까요.'],
       win:    ['좋은 승부였어요.'],
       lose:   ['훌륭하셨어요.'],
     },
   ];
   const LINE_FOR_CATEGORY = { mo:'great', yut:'great', geol:'good', gae:'good', do:'meh', backdo:'bad' };
 
+  // only the punchy moments get spoken aloud — idle chatter stays as bubbles
+  const SPOKEN_KINDS = ['capture','caught','great','finish','win','lose','together'];
   function sayLine(pieceMesh, kind, ms){
     if (!pieceMesh || !board3d.speak) return;
     const persona = SPEECH_LINES[pieceMesh.personaIndex || 0] || SPEECH_LINES[0];
     const pool = persona[kind] || persona.idle;
-    board3d.speak(pieceMesh, pool[Math.floor(Math.random()*pool.length)], ms);
+    const line = pool[Math.floor(Math.random()*pool.length)];
+    board3d.speak(pieceMesh, line, ms);
+    if (SPOKEN_KINDS.indexOf(kind) !== -1) sayAloud(line, pieceMesh.personaIndex);
   }
 
   function reactionEmojiFor(category){
@@ -1938,8 +2091,8 @@
     const sub = document.getElementById('impact-sub');
     text.textContent = outcome.result;
     text.className = 'impact-text' + (outcome.tone ? ' tone-' + outcome.tone : '');
-    sub.textContent = (outcome.steps > 0 ? '+' : '') + outcome.steps + '칸'
-      + (outcome.extraTurn ? '  ·  한 번 더!' : '');
+    sub.textContent = (outcome.steps === 0 ? '' : (outcome.steps > 0 ? '+' : '') + outcome.steps + '칸 이동')
+      + (outcome.extraTurn ? (outcome.steps === 0 ? '한 번 더!' : '  ·  한 번 더!') : '');
     el.classList.remove('go');
     void el.offsetWidth;            // restart the animation
     el.classList.add('go');
@@ -2064,6 +2217,30 @@
     board3d.toOverview();
   }
 
+  function backToMenu(){
+    state.over = true;               // stops any in-flight turn from continuing
+    state.gen = (state.gen || 0) + 1;
+    state.busy = false;
+    setBotThinking(false);
+    hideReaction();
+    document.getElementById('gameover').hidden = true;
+    document.getElementById('gameover').classList.remove('go');
+    document.getElementById('shortcut-prompt').hidden = true;
+    stopBGM();
+    if (board3d.hushAll) board3d.hushAll();
+    board3d.pieceMeshes.forEach(pm => {
+      pm.slot = 'bench:' + pm.owner + ':' + pm.idx;
+      const [x, z] = board3d.benchPos(pm.owner, pm.idx);
+      pm.group.position.set(x, 0, z);
+      pm.setExpression('neutral');
+      pm.setPose('idle');
+      pm.walking = false;
+    });
+    board3d.hideSticks();
+    board3d.enterTitleMode();
+    showScreen('setup');
+  }
+
   function restartGame(){
     document.getElementById('gameover').hidden = true;
     document.getElementById('gameover').classList.remove('go');
@@ -2108,8 +2285,11 @@
 
     // ---- watch her first, then throw ----
     await board3d.focusOnPiece(thrower, 3.0);
-    if (isBot) setBotThinking(true, '🤖 ' + thrower.charName + ' 생각 중…');
-    await wait(isBot ? 700 : 320);
+    if (isBot){
+      setBotThinking(true, '🤖 ' + thrower.charName + ' 생각 중…');
+      thrower.setPose('think');
+    }
+    await wait(isBot ? 900 : 320);
     setBotThinking(false);
 
     thrower.setPose('windup');
@@ -2128,10 +2308,6 @@
     await wait(320);
     board3d.hideSticks();
 
-    document.getElementById('result-name').textContent = outcome.result;
-    document.getElementById('result-name').className = 'result-name'+(outcome.tone?' tone-'+outcome.tone:'');
-    document.getElementById('result-steps').textContent = (outcome.steps>0?'+':'')+outcome.steps+'칸 이동';
-    document.getElementById('result-extra').hidden = !outcome.extraTurn;
     showImpact(outcome);
     if (outcome.extraTurn) playDing();
     if (outcome.category==='backdo') playSad();
@@ -2181,7 +2357,8 @@
         captured = await captureAt(land, owner);
         if (captured){
           showImpact({ result:'잡았다!', steps:0, extraTurn:true, tone:'red' });
-          sayLine(meshes[0], 'capture', 2200);
+          sayLine(meshes[0], 'capture', 2400);
+          setTimeout(() => laughAloud(meshes[0] && meshes[0].personaIndex), 900);
         }
       }
     } else {
@@ -2228,6 +2405,8 @@
   function maybeRunBot(){
     if (state.over || state.busy) return;
     const p = state.players[state.currentPlayerIndex];
+    const btn = document.getElementById('throw-btn');
+    if (btn) btn.disabled = !!(p && p.type === 'bot');
     if (!p || p.type !== 'bot') return;
     setBotThinking(true);
     setTimeout(() => { setBotThinking(false); takeTurn(); }, 850);
@@ -2260,7 +2439,14 @@
 
   const loadingEl = document.getElementById('loading');
   const pctEl = document.getElementById('loading-pct');
-  function setProgress(frac){ pctEl.textContent = Math.round(frac*100) + '%'; }
+  // loaded/total can exceed 1 when the server gzips the response, so clamp and
+  // never let the number walk backwards
+  let shownProgress = 0;
+  function setProgress(frac){
+    const v = Math.max(0, Math.min(1, frac || 0));
+    shownProgress = Math.max(shownProgress, v);
+    pctEl.textContent = Math.round(shownProgress * 100) + '%';
+  }
 
   // ---- VRM → the same character API the game already speaks ----
   // three-vrm's normalized humanoid rest pose is a T-pose, and Euler order
@@ -2288,6 +2474,12 @@
     release: { armDown: 1.10, armSwing:-0.95, elbow: 0.20, torso: 0.16, head: 0.08 },
     cheer:   { armDown:-0.70, armSwing:-0.20, elbow: 0.30, torso:-0.06, head:-0.12 },
     droop:   { armDown: 1.40, armSwing: 0.15, elbow: 0.12, torso: 0.20, head: 0.30 },
+    // a small wave, and a hand-to-chin think — used while waiting and thinking
+    greet:   { armDown: 1.30, armSwing: 0.05, elbow: 0.30, armDownR: 0.15, armSwingR:-0.25, elbowR: 0.95, head:-0.06 },
+    // 업기 — the two of them hold the hand on the partner's side
+    holdR:   { armDown: 1.32, armSwing: 0.08, elbow: 0.30, armDownR: 0.92, armSwingR: 0.05, elbowR: 0.12, head:-0.04 },
+    holdL:   { armDown: 1.32, armSwing: 0.08, elbow: 0.30, armDownL: 0.92, armSwingL: 0.05, elbowL: 0.12, head:-0.04 },
+    think:   { armDown: 1.34, armSwing: 0.10, elbow: 0.35, armDownR: 0.55, armSwingR:-0.75, elbowR: 1.55, head: 0.14, torso: 0.06 },
   };
 
   // Each idol stands and celebrates differently. Poses may override a single
@@ -2296,11 +2488,15 @@
   const PERSONA_POSES = [
     { // 시노 — 차분한 학생회장: 두 손을 앞으로 모으고, 기뻐도 절제된 만세
       idle:  { armDown: 1.44, armSwing: 0.16, elbow: 0.85 },
+      greet: { armDown: 1.42, armSwing: 0.12, elbow: 0.9, head: 0.16 },   // 목례
+      think: { armDown: 1.40, armSwing: 0.08, elbow: 0.7, armDownR: 0.5, armSwingR:-0.8, elbowR: 1.6, head: 0.1 },
       cheer: { armDown:-0.10, armSwing:-0.40, elbow: 0.80, head:-0.08 },
       droop: { armDown: 1.46, armSwing: 0.04, elbow: 0.55, torso: 0.26, head: 0.34 },
     },
     { // 비타 — 씩씩한 모험가: 팔을 벌리고 당당하게, 기쁘면 두 손 만세
       idle:  { armDown: 1.10, armSwing: 0.00, elbow: 0.16 },
+      greet: { armDown: 1.10, armSwing: 0.0, elbow: 0.2, armDownR:-0.55, armSwingR:-0.2, elbowR: 0.5 },  // 크게 손 흔들기
+      think: { armDown: 1.05, armSwing: 0.15, elbow: 0.2, torso:-0.05, head:-0.1 },
       cheer: { armDown:-1.00, armSwing:-0.08, elbow: 0.12, torso:-0.10 },
       droop: { armDown: 1.30, armSwing: 0.30, elbow: 0.10, torso: 0.12, head: 0.20 },
     },
@@ -2311,6 +2507,8 @@
     },
     { // 빅토리아 — 우아한 아가씨: 한 손은 가슴에, 기쁘면 조용히 손뼉
       idle:  { armDown: 1.34, armSwing: 0.12, elbow: 0.45, armDownL: 1.05, elbowL: 1.15 },
+      greet: { armDown: 1.32, armSwing: 0.1, elbow: 0.5, armDownL: 0.95, elbowL: 1.3, head: 0.12 },
+      think: { armDown: 1.36, armSwing: 0.05, elbow: 0.5, armDownR: 0.45, armSwingR:-0.85, elbowR: 1.65, head: 0.12 },
       cheer: { armDown: 0.35, armSwing:-0.55, elbow: 1.25, head:-0.06 },
       droop: { armDown: 1.44, armSwing: 0.00, elbow: 0.75, torso: 0.24, head: 0.36 },
     },
@@ -2319,10 +2517,10 @@
   // happy/sad/relaxed by three-vrm, so these names work for both spec versions.
   const VRM_EXPRESSIONS = {
     neutral: {},
-    happy:   { happy: 1.0 },
-    excited: { happy: 1.0, aa: 0.4 },
-    sad:     { sad: 1.0 },
-    shock:   { surprised: 1.0, oh: 0.5, sad: 0.25 },
+    happy:   { happy: 0.72 },
+    excited: { happy: 0.85, aa: 0.16 },   // a grin, not a shout
+    sad:     { sad: 0.9 },
+    shock:   { surprised: 0.9, oh: 0.28, sad: 0.2 },
   };
   const EXPRESSION_KEYS = ['happy','sad','angry','relaxed','surprised','aa','oh','ih','ee','ou'];
 
@@ -2339,6 +2537,7 @@
     const bone = n => vrm.humanoid.getNormalizedBoneNode(n);
     const joints = {
       torso: bone('spine'), head: bone('head'),
+      chest: bone('chest') || bone('upperChest'), neck: bone('neck'), hips: bone('hips'),
       shoulderL: bone('leftUpperArm'), shoulderR: bone('rightUpperArm'),
       elbowL: bone('leftLowerArm'), elbowR: bone('rightLowerArm'),
       hipL: bone('leftUpperLeg'), hipR: bone('rightUpperLeg'),
@@ -2359,8 +2558,11 @@
 
       personaIndex: personaIndex || 0,
       setPose(name){
+        // always merge over idle: a pose that omits a field (say torso) would
+        // otherwise feed undefined into setFromAxisAngle and NaN the skeleton,
+        // which makes the whole model vanish
         const base = VRM_POSES[name] || VRM_POSES.idle;
-        this.pose = persona[name] ? Object.assign({}, base, persona[name]) : base;
+        this.pose = Object.assign({}, VRM_POSES.idle, base, persona[name] || {});
       },
       getHeadWorldPosition(out){
         if (rawHead) rawHead.getWorldPosition(out);
@@ -2374,8 +2576,8 @@
         if (!m) return;
         try {
           if (!on){ m.setValue('aa', 0); m.setValue('ih', 0); return; }
-          m.setValue('aa', Math.abs(Math.sin(now/95)) * 0.65);
-          m.setValue('ih', Math.abs(Math.sin(now/150)) * 0.25);
+          m.setValue('aa', Math.abs(Math.sin(now/175)) * 0.28);
+          m.setValue('ih', Math.abs(Math.sin(now/260)) * 0.12);
         } catch (e) {}
       },
       faceTowards(dx, dz){
@@ -2394,6 +2596,7 @@
       tickAnim(now, dt){
         const k = Math.min(1, dt * 11);
         const p = this.pose;
+        const num = v => (typeof v === 'number' && isFinite(v)) ? v : 0;
         const downL = p.armDownL !== undefined ? p.armDownL : p.armDown;
         const downR = p.armDownR !== undefined ? p.armDownR : p.armDown;
         const elbowL = p.elbowL !== undefined ? p.elbowL : p.elbow;
@@ -2403,7 +2606,7 @@
         let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0;
 
         if (this.walking){
-          this.walkPhase += dt * 9;
+          this.walkPhase += dt * 8;
           const w = this.walkPhase;
           hipL = -Math.sin(w) * 0.5;  hipR = Math.sin(w) * 0.5;
           kneeL = Math.max(0, Math.sin(w)) * 0.7;
@@ -2414,16 +2617,34 @@
           vrm.scene.position.y = Math.sin(now/(560 + (personaIndex||0)*70)) * 0.012;
         }
 
-        slerpBone(joints.shoulderL, armQuat(qT, 1, downL, swingL), k);
-        slerpBone(joints.shoulderR, armQuat(qT, -1, downR, swingR), k);
-        slerpBone(joints.elbowL, qT.setFromAxisAngle(AX_Y, -elbowL), k);
-        slerpBone(joints.elbowR, qT.setFromAxisAngle(AX_Y, elbowR), k);
+        slerpBone(joints.shoulderL, armQuat(qT, 1, num(downL), num(swingL)), k);
+        slerpBone(joints.shoulderR, armQuat(qT, -1, num(downR), num(swingR)), k);
+        slerpBone(joints.elbowL, qT.setFromAxisAngle(AX_Y, -num(elbowL)), k);
+        slerpBone(joints.elbowR, qT.setFromAxisAngle(AX_Y, num(elbowR)), k);
         slerpBone(joints.hipL, qT.setFromAxisAngle(AX_X, hipL), k);
         slerpBone(joints.hipR, qT.setFromAxisAngle(AX_X, hipR), k);
         slerpBone(joints.kneeL, qT.setFromAxisAngle(AX_X, kneeL), k);
         slerpBone(joints.kneeR, qT.setFromAxisAngle(AX_X, kneeR), k);
-        slerpBone(joints.torso, qT.setFromAxisAngle(AX_X, p.torso), k);
-        slerpBone(joints.head, qT.setFromAxisAngle(AX_X, p.head + (this.headExtra || 0)), k);
+        slerpBone(joints.torso, qT.setFromAxisAngle(AX_X, num(p.torso)), k);
+        slerpBone(joints.head, qT.setFromAxisAngle(AX_X, num(p.head) + num(this.headExtra)), k);
+
+        // breathing and a slow weight shift, phased per character so the four
+        // of them never look like a row of mannequins at attention
+        const ph = (personaIndex || 0) * 1.7;
+        const breathe = Math.sin(now/1900 + ph) * 0.035;
+        const swayBody = Math.sin(now/2600 + ph) * 0.05;
+        if (joints.chest){
+          qT.setFromAxisAngle(AX_X, -breathe);
+          joints.chest.quaternion.slerp(qT, k);
+        }
+        if (joints.hips && !this.walking){
+          qT.setFromAxisAngle(AX_Z, swayBody);
+          joints.hips.quaternion.slerp(qT, k * 0.6);
+        }
+        if (joints.neck){
+          qT.setFromAxisAngle(AX_Y, Math.sin(now/3100 + ph) * 0.09);
+          joints.neck.quaternion.slerp(qT, k * 0.5);
+        }
 
         // idle blinking
         nextBlink -= dt;
