@@ -1818,10 +1818,29 @@
     function finishPos(owner, idx){ return [-6.3 + seatIndex(owner, idx)*1.8, -(RING_R + 3.1)]; }
     // characters sitting out a game rest in a camp off to the side, facing in
     function restPos(i){ return [RING_R + 3.7, -4.2 + (i % 4) * 2.3]; }
+    // On the title screen all eight stand in two facing rows — a row of eight
+    // ran off both sides of the frame, and facing pairs suit the small talk.
+    function titlePos(i){
+      // one row, shoulder to shoulder — two rows put half of them behind the
+      // menu card, and eight at bench spacing ran off both sides
+      return [-4.48 + i * 1.28, RING_R + 3.0];
+    }
+    function toTitleLineup(){
+      pieceMeshes.forEach((pm, i) => {
+        const [x, z] = titlePos(i);
+        pm.resting = false;
+        pm.walking = false;
+        pm.slot = 'bench:' + pm.owner + ':' + pm.idx;
+        pm.group.position.set(x, 0, z);
+        pm.setPose('idle');
+        pm.setExpression('neutral');
+      });
+      showRestCamp(0);
+    }
     for (let owner=0; owner<MAX_PLAYERS; owner++){
       for (let idx=0; idx<2; idx++){
         const c = makeCharacter(owner, idx);
-        const [x,z] = benchPos(owner, idx);
+        const [x,z] = titlePos(seatIndex(owner, idx));
         c.group.position.set(x,0,z);
         // all four are different characters, so a team-coloured ring at their
         // feet is what actually tells you whose piece is whose
@@ -2013,17 +2032,19 @@
       const c = titleCenter();
       // they stand in a wide row, so sway across the front instead of orbiting
       // all the way round (which would end up looking down the line)
-      const sway = Math.sin(titleAngle) * 0.55;
-      const dist = 7.4;
-      camera.position.set(c.x + Math.sin(sway)*dist, 2.15, c.z + Math.cos(sway)*dist);
-      lookAt.set(c.x, 0.05, c.z);
+      const sway = Math.sin(titleAngle) * 0.2;
+      const dist = 8.0;
+      // aimed below their feet, which lifts the whole line-up clear of the
+      // menu card in the lower half of the screen
+      camera.position.set(c.x + Math.sin(sway)*dist, 1.9, c.z + Math.cos(sway)*dist);
+      lookAt.set(c.x, -0.35, c.z);
       camera.lookAt(lookAt);
       updateTitleChatter(now, dt);
     }
 
-    // ---- title screen: the four of them stand around chatting ----
-    // bench layout puts them in two facing columns, so [0]↔[2] and [1]↔[3]
-    // are the natural pairs. Each pair swaps speaker on its own random timer.
+    // ---- title screen: the eight of them stand around chatting ----
+    // neighbours in the row pair off — [0]↔[1], [2]↔[3] … — and turn to face
+    // each other. Each pair swaps speaker on its own timer.
     const CHAT_PAIRS = [[0,1],[2,3],[4,5],[6,7]];
     // spaced well apart: eight of them talking over each other was a racket
     const chat = CHAT_PAIRS.map((_, i) => ({ timer: 1.0 + i*2.6, speaker: i % 2 }));
@@ -2032,7 +2053,7 @@
         const st = chat[pi];
         st.timer -= dt;
         if (st.timer <= 0){
-          st.timer = 7.5 + Math.random()*5.5;
+          st.timer = 9 + Math.random()*6;
           st.speaker = Math.random() < 0.45 ? st.speaker : 1 - st.speaker;
         }
         pair.forEach((mi, k) => {
@@ -2051,7 +2072,7 @@
           if (speaking && st.spokeFor !== st.timer){
             st.spokeFor = st.timer;
             // read aloud only when no one else is mid-sentence
-            if (window.sayLine) sayLine(me, 'idle', 6200, { onlyIfQuiet: true });
+            if (window.sayLine) sayLine(me, 'idle', 5000, { onlyIfQuiet: true });
           }
           if ('headExtra' in me){
             me.headExtra = speaking ? Math.sin(now/420 + mi)*0.05
@@ -2429,7 +2450,7 @@
     requestAnimationFrame(tick);
 
     return {
-      seatOut, showRestCamp,
+      seatOut, showRestCamp, toTitleLineup,
       pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, focusOnFace,
       focusOnPiece, toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear,
       hideSticks, restackSlot, exitTitleMode, enterTitleMode, camera, sendHome, speak, hushAll,
@@ -2818,15 +2839,7 @@
     document.getElementById('shortcut-prompt').hidden = true;
     stopBGM();
     if (board3d.hushAll) board3d.hushAll();
-    board3d.showRestCamp(0);
-    board3d.pieceMeshes.forEach(pm => {
-      pm.slot = 'bench:' + pm.owner + ':' + pm.idx;
-      const [x, z] = board3d.benchPos(pm.owner, pm.idx);
-      pm.group.position.set(x, 0, z);
-      pm.setExpression('neutral');
-      pm.setPose('idle');
-      pm.walking = false;
-    });
+    board3d.toTitleLineup();
     board3d.hideSticks();
     board3d.enterTitleMode();
     showScreen('setup');
@@ -3033,11 +3046,22 @@
     { url:'./models/victoria.vrm', name:'빅토리아' },
     { url:'./models/fumiriya.vrm', name:'후미리야' },
   ];
+  // Eight parts, five models. The last three are the first three again, but
+  // recoloured — their hair and clothing textures are hue-rotated at load time
+  // so they read as different girls, and they get their own names rather than a
+  // "II" after someone else's.
   const CAST_SIZE = 8;
+  const RECOLOURS = [
+    { name:'새별', hue: 155, sat: 1.15 },   // 시노 → 청록 머리
+    { name:'노을', hue: 300, sat: 1.20 },   // 비타 → 자홍 머리
+    { name:'미르', hue: 205, sat: 1.10 },   // 비비 → 하늘빛 머리
+  ];
   const CAST = Array.from({ length: CAST_SIZE }, (_, i) => {
     const base = IDOL_ROSTER[i % IDOL_ROSTER.length];
     const dup = Math.floor(i / IDOL_ROSTER.length);
-    return { url: base.url, name: base.name + ['', ' II', ' III'][dup] };
+    if (!dup) return { url: base.url, name: base.name };
+    const rc = RECOLOURS[i - IDOL_ROSTER.length];
+    return { url: base.url, name: rc.name, recolour: rc };
   });
   const TARGET_HEIGHT = 1.5;
 
@@ -3314,6 +3338,74 @@
     };
   }
 
+  // ---- recolouring a VRM: hue-rotate the hair and clothing textures ----
+  // MToon multiplies texture x colour, so just tinting the colour can only
+  // darken a navy-haired model. Redrawing the texture through a canvas
+  // hue-rotate actually moves the hue, which is what makes the reused model
+  // read as a different character. Skin, face and eye textures are left alone —
+  // and any texture those materials share is skipped, since VRoid models
+  // sometimes pack more than one body part into one image.
+  const HAIR_CLOTH = /HAIR|CLOTH|Tops|Bottoms|Onepiece|Shoes|Socks|Accessory/i;
+  const KEEP_AS_IS = /SKIN|FACE|EYE|Body|EyeHighlight|EyeIris|EyeWhite|Mouth/i;
+
+  function hueRotated(tex, deg, sat, cache){
+    if (!tex || !tex.image) return tex;
+    const img = tex.image;
+    if (cache.has(img)) return cache.get(img);
+    const w = img.width || img.videoWidth, h = img.height || img.videoHeight;
+    if (!w || !h) return tex;
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.filter = 'hue-rotate(' + deg + 'deg) saturate(' + sat + ')';
+    try { ctx.drawImage(img, 0, 0, w, h); } catch (e) { return tex; }
+    const out = new THREE.CanvasTexture(canvas);
+    out.flipY = tex.flipY;                 // glTF textures are not flipped
+    out.wrapS = tex.wrapS; out.wrapT = tex.wrapT;
+    out.colorSpace = tex.colorSpace;
+    out.needsUpdate = true;
+    cache.set(img, out);
+    return out;
+  }
+
+  function shiftColour(colour, deg, sat){
+    if (!colour) return;
+    const hsl = { h:0, s:0, l:0 };
+    colour.getHSL(hsl);
+    colour.setHSL((hsl.h + deg/360) % 1, Math.min(1, hsl.s * sat), hsl.l);
+  }
+
+  function recolourVrm(vrm, rc){
+    const mats = [];
+    vrm.scene.traverse(o => {
+      if (!o.isMesh || !o.material) return;
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => mats.push(m));
+    });
+    // images that any skin/face material touches are off limits
+    const protectedImages = new Set();
+    mats.forEach(m => {
+      if (!KEEP_AS_IS.test(m.name || '')) return;
+      ['map','shadeMultiplyTexture','emissiveMap'].forEach(k => {
+        if (m[k] && m[k].image) protectedImages.add(m[k].image);
+      });
+    });
+    const cache = new Map();
+    mats.forEach(m => {
+      const name = m.name || '';
+      if (!HAIR_CLOTH.test(name) || KEEP_AS_IS.test(name)) return;
+      ['map','shadeMultiplyTexture'].forEach(k => {
+        const tex = m[k];
+        if (!tex || !tex.image || protectedImages.has(tex.image)) return;
+        const next = hueRotated(tex, rc.hue, rc.sat, cache);
+        m[k] = next;
+        if (m.uniforms && m.uniforms[k]) m.uniforms[k].value = next;
+      });
+      shiftColour(m.color, rc.hue, rc.sat);
+      shiftColour(m.shadeColor, rc.hue, rc.sat);
+      m.needsUpdate = true;
+    });
+  }
+
   async function loadIdols(){
     const loader = new GLTFLoader();
     loader.register(parser => new VRMLoaderPlugin(parser));
@@ -3330,6 +3422,7 @@
       if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
       if (VRMUtils.combineSkeletons) VRMUtils.combineSkeletons(gltf.scene);
       if (VRMUtils.rotateVRM0) VRMUtils.rotateVRM0(vrm);   // VRM 0.x faces -Z otherwise
+      if (idol.recolour) recolourVrm(vrm, idol.recolour);
       vrm.scene.traverse(o => {
         o.frustumCulled = false;
         if (o.isMesh) o.castShadow = true;
