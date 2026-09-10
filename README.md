@@ -35,6 +35,7 @@ AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발한 전통 
 - **캐릭터 8인** — 각자 외형·대기 자세·대사·목소리·웃음소리가 다릅니다. 참가하지 않는
   캐릭터는 판 옆 휴식처의 그루터기에 앉아 구경합니다
 - **시네마틱 카메라** — 던질 캐릭터 → 윷 클로즈업 → 표정 클로즈업 → 걷기 추적 → 전체 보기
+- 잡힌 말은 **만세를 하며 날아가** 벤치에 떨어집니다
 - 격투게임식 결과 이펙트, 머리 위 이름표, 말풍선, 현재/다음 턴 패널
 - 우클릭 드래그(터치는 한 손가락)로 시점 회전, 휠/핀치로 확대·축소
 - 왼쪽 패널에 현재/다음 차례와 플레이어별 진행 상황(말마다 막대, 완주 n/2)
@@ -45,7 +46,71 @@ AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발한 전통 
 
 - 배경음악·윷·발걸음·잡기·완주·팬파레는 **CC0 녹음**을 재생합니다
 - 캐릭터 대사는 브라우저 음성합성으로 읽습니다 (턴 한마디, 결과 낭독, 잡힐 때 비명, 잡을 때 웃음)
+- 대사는 한 번에 하나씩, **말이 끝나기를 기다린 뒤** 윷을 던지고 말을 옮깁니다
+- 남자 캐릭터에게는 시스템에 남성 한국어 음성이 있으면 그 목소리를 배정합니다
+  (없으면 피치를 크게 낮춥니다 — Windows에는 보통 여성 음성 하나만 설치돼 있습니다)
 - 오디오 파일을 불러올 수 없는 환경에서는 Web Audio API 합성음으로 자동 폴백
+
+## 자료 출처
+
+가져다 쓴 모든 자료는 **재배포가 허용된 것만** 골랐습니다. 폴더별 상세 문서에 파일 단위
+출처와 라이선스 원문이 있습니다.
+
+### 캐릭터 (VRM) — [docs/models/README.md](./docs/models/README.md)
+
+**VRoid 프로젝트(pixiv Inc.)** 공식 샘플 모델 5종. 파일에 내장된 VRM 메타데이터에
+`redistribution=allow` · `modification=allow` · 상업이용 허용 · 크레딧 불필요가 명시되어
+있어 공개 저장소에 담을 수 있습니다.
+
+| 파일 | 캐릭터 | 게임 내 이름 |
+|---|---|---|
+| `shino.vrm` | 千駄ヶ谷篠 | 시노 (+ 색조 변경본 **새별**) |
+| `vita.vrm` | ヴィータ | 비타 (+ 색조 변경본 **노을**) |
+| `vivi.vrm` | ビビ | 비비 (+ 색조 변경본 **미르**) |
+| `victoria.vrm` | ヴィクトリア・ルービン | 빅토리아 |
+| `fumiriya.vrm` | 桜田史利矢 | 후미리야 |
+
+- 배포처: [OpenGameArt — VRoid Studio CC0 models](https://opengameart.org/content/vroid-studio-cc0-models)
+- 이용 조건 안내: [VRoid 공식 FAQ](https://vroid.pixiv.help/hc/en-us/articles/4402614652569)
+- 텍스처만 1024로 재인코딩해 파일당 15~20MB → 6~8MB로 줄였습니다 (모델 형상은 그대로)
+
+### 지형지물 · 소품 (GLB) — [docs/models/props/README.md](./docs/models/props/README.md)
+
+[Kenney — Nature Kit](https://kenney.nl/assets/nature-kit) · **CC0 1.0**. 원본 300여 개
+중 게임에서 쓰는 61개만 담았습니다(총 700KB). 24절기 소품, 귀의 석주, 참먹이 문,
+휴식처의 그루터기·천막·모닥불이 모두 이 킷입니다.
+
+### 음악 · 효과음 — [docs/audio/README.md](./docs/audio/README.md)
+
+모두 **CC0**, [OpenGameArt](https://opengameart.org/) 출처입니다.
+
+| 쓰임 | 원본 |
+|---|---|
+| 배경음악 | [Orient Peace Valley](https://opengameart.org/content/orient-peace-valley) |
+| 윷 던지는 소리 | [Wooden dice on wooden table roll](https://opengameart.org/content/wooden-dice-on-wodden-table-roll) |
+| 발걸음 · 클릭 · 잡기 · 완주 벨 | [100 CC0 SFX #2](https://opengameart.org/content/100-cc0-sfx-2) |
+| 승리 팬파레 | [Classic fanfare lick](https://opengameart.org/content/classic-fanfare-lick) |
+
+### 라이브러리 · 글꼴
+
+- [three.js](https://threejs.org/) 0.180 (MIT) · [@pixiv/three-vrm](https://github.com/pixiv/three-vrm) 3 (MIT) — jsDelivr에서 고정 버전 로드
+- [mermaid](https://mermaid.js.org/) (MIT) — PRD 페이지의 UML 렌더링
+- Google Fonts: [Black Han Sans](https://fonts.google.com/specimen/Black+Han+Sans) · [Jua](https://fonts.google.com/specimen/Jua) · [Noto Sans KR](https://fonts.google.com/noto/specimen/Noto+Sans+KR) (SIL Open Font License)
+
+### 고증 · 규칙 참고 — [docs/yutpan.md](./docs/yutpan.md)
+
+- [한국민족문화대백과사전 — 윷놀이](https://encykorea.aks.ac.kr/Article/E0042794)
+- [위키백과 — 윷놀이](https://ko.wikipedia.org/wiki/%EC%9C%B7%EB%86%80%EC%9D%B4) (도개걸윷모 판정과 확률)
+- [K스피릿 — 북극성과 28수의 뭇별이 들어앉은 작은 우주 '윷판'](http://www.ikoreanspirit.com/news/articleView.html?idxno=681)
+- [대순회보 — 윷판에 담긴 천문사상](https://webzine.daesoon.org/m/view.asp?webzine=32&menu_no=383&bno=438&page=1)
+- [천지일보 — 윷놀이 말판에 하늘·땅·별자리 그리고 계절이 담겼네](https://www.newscj.com/news/articleView.html?idxno=113657)
+
+### 검토했지만 쓰지 않은 것
+
+- **VRoid 공식 .vrma 모션 7종** — 수정·상업이용은 허용되지만 "꺼낼 수 있는 상태로 2차
+  배포" 금지라서 저장소에 담을 수 없습니다. Mixamo도 원본 에셋 재배포 금지로 제외.
+  대안으로 CC0인 [Quaternius Universal Animation Library](https://quaternius.com/packs/universalanimationlibrary.html)
+  리타게팅을 검토 중입니다 ([#25](https://github.com/progh2/yutnori/issues/25))
 
 ## 문서 & 링크
 

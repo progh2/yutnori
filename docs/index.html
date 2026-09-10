@@ -994,16 +994,35 @@
   // ---- voice: the browser's own speech synthesis, so no audio files and no
   // licence to worry about. Availability depends on the OS's Korean voices, so
   // everything here degrades to silence if none are installed. ----
-  const voice = { enabled:true, ko:null, perPersona:[null,null,null,null] };
+  const voice = { enabled:true, ko:null, perPersona:[] };
+  // Korean system voices, sorted by who they sound like. Windows ships Heami
+  // (female) and sometimes InJoon (male); Edge/Azure and phones add more.
+  const MALE_VOICES = /injoon|인준|bongjin|봉진|gookmin|국민|hyunsu|현수|jinho|진호|남성|\bmale\b|\bman\b/i;
+  const FEMALE_VOICES = /heami|혜미|sunhi|선희|yuna|유나|jimin|지민|seoyeon|서연|soonbok|순복|yujin|유진|nara|나라|여성|female|woman/i;
+
   function initVoices(){
     if (!('speechSynthesis' in window)) return;
     const pick = () => {
       const list = speechSynthesis.getVoices() || [];
       const ko = list.filter(v => /^ko/i.test(v.lang));
       voice.ko = ko[0] || null;
-      // hand each idol her own voice when the system has several Korean ones,
-      // otherwise they're separated by pitch and rate alone
-      voice.perPersona = Array.from({length:8}, (_, i) => ko.length ? ko[i % ko.length] : null);
+      const male = ko.filter(v => MALE_VOICES.test(v.name));
+      const female = ko.filter(v => FEMALE_VOICES.test(v.name));
+      const unknown = ko.filter(v => !MALE_VOICES.test(v.name) && !FEMALE_VOICES.test(v.name));
+      // a male character gets a male voice if the system has one; if not, the
+      // only thing left is to drop the pitch a long way on a female voice
+      voice.perPersona = VOICE_TONE.map((tone, i) => {
+        const pool = tone.male ? (male.length ? male : unknown.length ? unknown : female)
+                               : (female.length ? female : unknown.length ? unknown : male);
+        const v = pool.length ? pool[i % pool.length] : null;
+        const matched = !!v && (tone.male ? male.indexOf(v) !== -1 : male.indexOf(v) === -1);
+        return {
+          voice: v,
+          // a real male voice does not need the pitch pulled down as well
+          pitch: tone.male ? (matched ? 0.95 : 0.55) : tone.pitch,
+          rate: tone.rate,
+        };
+      });
     };
     pick();
     speechSynthesis.addEventListener('voiceschanged', pick);
@@ -1016,14 +1035,14 @@
     }, 300);
   }
   const VOICE_TONE = [
-    { pitch:1.0,  rate:0.95 },   // 시노 — 차분
-    { pitch:1.12, rate:1.05 },   // 비타 — 씩씩
-    { pitch:1.5,  rate:1.05 },   // 비비 — 발랄
-    { pitch:0.92, rate:0.9  },   // 빅토리아 — 우아
-    { pitch:0.7,  rate:1.0  },   // 후미리야 — 소년, 낮고 느긋
-    { pitch:1.2,  rate:0.85 },   // 새별 — 조용하고 느림
-    { pitch:0.86, rate:0.95 },   // 노을 — 여유로운 저음
-    { pitch:1.45, rate:1.12 },   // 미르 — 높고 빠름
+    { pitch:1.0,  rate:0.95 },              // 시노 — 차분
+    { pitch:1.12, rate:1.05 },              // 비타 — 씩씩
+    { pitch:1.5,  rate:1.05 },              // 비비 — 발랄
+    { pitch:0.92, rate:0.9  },              // 빅토리아 — 우아
+    { pitch:0.7,  rate:1.0, male:true },    // 후미리야 — 소년
+    { pitch:1.2,  rate:0.85 },              // 새별 — 조용하고 느림
+    { pitch:0.86, rate:0.95 },              // 노을 — 여유로운 저음
+    { pitch:1.45, rate:1.12 },              // 미르 — 높고 빠름
   ];
   const LAUGHS = ['후훗, 후훗', '하하하!', '히히히!', '호호호!',
                   '크크크', '헤헤… 헤헤', '후후, 후후', '으하하!'];
@@ -1037,6 +1056,11 @@
   const MAX_QUEUE = 3;
 
   function speechBusy(){ return !!speaking || speechQueue.length > 0; }
+  // Browsers on phones drop anything spoken before the first tap. Knowing
+  // whether that has happened yet is what keeps the welcome line from being
+  // said twice — once by the swallowed attempt and once by the retry.
+  let interacted = false, everSpoke = false;
+
   function pumpSpeech(){
     if (speaking || !speechQueue.length) return;
     const item = speechQueue.shift();
@@ -1047,6 +1071,7 @@
       speaking = null;
       clearTimeout(speechTimer);
       clearTimeout(item.retry);
+      if (item.onfinish) item.onfinish(started);
       setTimeout(pumpSpeech, 90);          // a beat of silence between lines
     };
     const attempt = () => {
@@ -1057,7 +1082,7 @@
       if (item.voice) u.voice = item.voice;
       u.lang = 'ko-KR';
       u.pitch = item.pitch; u.rate = item.rate; u.volume = 0.95;
-      u.onstart = () => { started = true; if (item.onstart) item.onstart(); };
+      u.onstart = () => { started = true; everSpoke = true; if (item.onstart) item.onstart(); };
       u.onend = done;
       u.onerror = done;
       try {
@@ -1066,10 +1091,12 @@
         speechSynthesis.resume();
         speechSynthesis.speak(u);
       } catch (e) { done(); return; }
-      // if it never starts, try once more from scratch before giving up
+      // If it never starts, try once more — but not before the first tap,
+      // because on a phone nothing can start yet and the retry would only
+      // stack a second copy waiting behind the first.
       item.retry = setTimeout(() => {
         if (speaking !== item || started) return;
-        if (tries < 2){ try { speechSynthesis.cancel(); } catch (e) {} attempt(); }
+        if (interacted && tries < 2){ try { speechSynthesis.cancel(); } catch (e) {} attempt(); }
         else done();
       }, 700);
     };
@@ -1081,11 +1108,14 @@
   function sayAloud(text, personaIndex, opts){
     if (!voice.enabled || !audio.enabled) return;
     if (!('speechSynthesis' in window)) return;
-    const tone = VOICE_TONE[(personaIndex || 0) % VOICE_TONE.length];
+    const i = (personaIndex || 0) % VOICE_TONE.length;
+    const tone = VOICE_TONE[i];
+    const assigned = voice.perPersona[i] || {};
     speechQueue.push({
-      text, onstart: opts && opts.onstart,
-      voice: voice.perPersona[(personaIndex || 0) % voice.perPersona.length] || voice.ko,
-      pitch: tone.pitch, rate: tone.rate,
+      text, onstart: opts && opts.onstart, onfinish: opts && opts.onfinish,
+      voice: assigned.voice || voice.ko,
+      pitch: assigned.pitch || tone.pitch,
+      rate: assigned.rate || tone.rate,
     });
     while (speechQueue.length > MAX_QUEUE) speechQueue.shift();
     pumpSpeech();
@@ -1098,16 +1128,46 @@
   }
   // spoken once, the first time the page is allowed to make a sound
   window.speechBusy = speechBusy;
-  const WELCOME_LINE = '별밭 윷놀이에 오신 것을 환영합니다.';
-  let welcomeDone = false;
-  function speakWelcome(){
-    if (welcomeDone) return;
-    sayAloud(WELCOME_LINE, 0, { onstart(){ welcomeDone = true; } });
+  // waits until nobody is mid-sentence, so the game can let a line finish
+  function speechIdle(maxMs){
+    return new Promise(resolve => {
+      const until = performance.now() + (maxMs === undefined ? 2500 : maxMs);
+      const check = () => {
+        if (!speechBusy() || performance.now() > until) resolve();
+        else setTimeout(check, 80);
+      };
+      check();
+    });
   }
-  // browsers stay silent until the page has been interacted with, so try at
-  // boot and again on the first click or key press
+  window.speechIdle = speechIdle;
+
+  const WELCOME_LINE = '별밭 윷놀이에 오신 것을 환영합니다.';
+  // idle → queued → done. Only one attempt is ever in flight, and an attempt
+  // the browser swallowed puts it back to idle so the next tap can try again.
+  let welcome = 'idle';
+  function speakWelcome(){
+    if (welcome !== 'idle') return;
+    welcome = 'queued';
+    sayAloud(WELCOME_LINE, 0, {
+      onstart(){ welcome = 'done'; },
+      onfinish(started){ if (!started) welcome = 'idle'; },
+    });
+  }
+  // On a desktop this speaks at load. On a phone the browser swallows it, so
+  // the first tap clears whatever is stuck and gives it a few tries — one of
+  // which lands, and the state machine keeps it to a single reading.
+  function onFirstInteraction(){
+    if (interacted) return;
+    interacted = true;
+    if (!everSpoke) clearSpeech();          // nothing has been heard: start clean
+    let tries = 0;
+    const t = setInterval(() => {
+      if (welcome === 'done' || ++tries > 6) return clearInterval(t);
+      speakWelcome();
+    }, 700);
+  }
   ['pointerdown','keydown','touchstart'].forEach(ev =>
-    window.addEventListener(ev, () => setTimeout(speakWelcome, 50), { passive:true }));
+    window.addEventListener(ev, onFirstInteraction, { passive:true }));
   function laughAloud(personaIndex){ sayAloud(LAUGHS[(personaIndex || 0) % LAUGHS.length], personaIndex); }
   function toggleVoice(){
     voice.enabled = !voice.enabled;
@@ -2563,17 +2623,21 @@
     }
 
     // a captured piece trudges back to the bench
+    // She doesn't walk back — she is sent flying, arms up, and lands on the
+    // bench. The walk cycle stays off so the 만세 pose survives the trip.
     async function sendHome(piece, x, z){
       const from = piece.group.position.clone();
       const target = new THREE.Vector3(x, 0, z);
-      piece.walking = true;
-      piece.faceTowards(target.x - from.x, target.z - from.z);
-      await animate(700, t => {
+      piece.walking = false;
+      piece.flying = true;                                       // hands off, she's airborne
+      piece.faceTowards(from.x - target.x, from.z - target.z);   // face back at the board
+      await animate(760, t => {
         piece.group.position.lerpVectors(from, target, easeInOutCubic(t));
-        piece.group.position.y = Math.sin(Math.PI*t) * 0.25;   // a small dejected hop
+        piece.group.position.y = Math.sin(Math.PI*t) * 0.5;
+        piece.group.rotation.y += 0.06;                          // a tumbling spin
       });
       piece.group.position.set(x, 0, z);
-      piece.walking = false;
+      piece.flying = false;
       piece.stackOffset = [0,0];
     }
 
@@ -2659,7 +2723,7 @@
       if (starSpin){ starSpin.rotation.y += dt*0.8; starSpin.position.y = 0.42 + Math.sin(now/700)*0.04; }
       // idols always turn to face whoever is watching, unless they're walking
       pieceMeshes.forEach(p => {
-        if (!p.walking && !p.resting)
+        if (!p.walking && !p.resting && !p.flying)
           p.faceTowards(camera.position.x - p.group.position.x, camera.position.z - p.group.position.z);
       });
       if (!titleMode) applyGroupBehaviour(now);
@@ -3152,10 +3216,19 @@
       const mesh = board3d.pieceMeshes.find(pm => pm.owner === foe.owner && pm.idx === foe.idx);
       if (!mesh) return Promise.resolve();
       mesh.setExpression('shock');
+      mesh.setPose('flail');           // 만세 — thrown off the board
       sayLine(mesh, 'caught', 2400);
       const [bx, bz] = board3d.benchPos(foe.owner, foe.idx);
       mesh.slot = 'bench:' + foe.owner + ':' + foe.idx;
-      return board3d.sendHome(mesh, bx, bz);
+      return board3d.sendHome(mesh, bx, bz).then(() => {
+        mesh.setPose('droop');
+        setTimeout(() => {
+          if (mesh.slot === 'bench:' + foe.owner + ':' + foe.idx){
+            mesh.setPose('idle');
+            mesh.setExpression('neutral');
+          }
+        }, 1800);
+      });
     }));
     return foes.length;
   }
@@ -3282,13 +3355,17 @@
 
     // ---- watch her first, then throw ----
     await board3d.focusOnPiece(thrower, 3.2);
-    sayLine(thrower, 'turn', 2000);
+    sayLine(thrower, 'turn', 2200);
     if (isBot){
       setBotThinking(true, '🤖 ' + thrower.charName + ' 생각 중…');
       thrower.setPose('think');
     }
     await wait(isBot ? 900 : 320);
     setBotThinking(false);
+    // let her finish saying it before she throws — at 2x speed the lines used
+    // to pile up behind the action
+    await speechIdle(2200);
+    if (stale()){ state.busy = false; return; }
 
     thrower.setPose('windup');
     await wait(430);
@@ -3303,7 +3380,8 @@
     thrower.setPose('idle');
     if (stale()){ board3d.hideSticks(); state.busy = false; return; }
 
-    await wait(320);
+    // hold the sticks a moment: this is when you count the 배 for yourself
+    await wait(620);
     board3d.hideSticks();
 
     showImpact(outcome);
@@ -3326,6 +3404,8 @@
     await wait(1000);
     hideReaction();
 
+    // the result and her reaction get read out before anyone walks
+    await speechIdle(1800);
     if (stale()){ state.busy = false; return; }
 
     // ---- move ----
@@ -3532,9 +3612,12 @@
     holdL:   { armDown: 1.40, armSwing: 0.06, elbow: 0.26, armDownL: 1.16, armSwingL: 0.02, elbowL: 0.16, head:-0.04 },
     think:   { armDown: 1.42, armSwing: 0.08, elbow: 0.30, armDownR: 0.85, armSwingR:-0.55, elbowR: 1.60, head: 0.14, torso: 0.06 },
     // resting on a stump: thighs forward, shins down, hands on her knees.
-    // `lift` drops the whole body onto the seat.
+    // `lift` drops the whole body onto the seat. Legs use the measured
+    // convention: +X swings a limb forwards, so the knee folds with −X.
     sit:     { armDown: 1.22, armSwing: 0.16, elbow: 0.62, torso: 0.07, head: 0.03,
-               hip:-1.30, knee: 1.28, foot:-0.06, lift:-0.40 },
+               hip: 1.30, knee:-1.28, foot: 0.06, lift:-0.40 },
+    // caught and thrown off the board — both arms up, leaning back
+    flail:   { armDown:-1.15, armSwing:-0.18, elbow: 0.22, torso:-0.16, head:-0.22 },
   };
 
   // Each idol stands and celebrates differently. Poses may override a single
@@ -3703,21 +3786,25 @@
           const rate = Math.max(2.4, Math.min(11, (this.walkSpeed || 2.7) * 2.9));
           this.walkPhase += dt * rate;
           const w = this.walkPhase;
-          // +X on a leg bone swings it backwards, so a forward step is -X and
-          // knee flexion is +X. The knee bends during the swing phase (just
-          // after toe-off) and stays almost straight while the leg carries her.
-          hipL = -Math.sin(w) * 0.44 - 0.03;
-          hipR =  Math.sin(w) * 0.44 - 0.03;
-          kneeL = 0.07 + 0.82 * Math.max(0, Math.sin(w - 3.7));
-          kneeR = 0.07 + 0.82 * Math.max(0, Math.sin(w - 3.7 + Math.PI));
-          footL = -(hipL + kneeL) * 0.55;
-          footR = -(hipR + kneeR) * 0.55;
-          // arms swing opposite the legs, loosely bent — not clasped in front
-          swingL = Math.sin(w) * 0.34; swingR = -Math.sin(w) * 0.34;
+          // Measured on the model: +X on a leg bone swings the limb *forwards*
+          // (the way she faces). So hip flexion is +X and knee flexion — the
+          // shin folding back — is −X. Getting this backwards bent the knees
+          // the wrong way, like a bird's.
+          const step = Math.sin(w);                       // +1 = left leg leading
+          hipL =  0.42 * step - 0.02;
+          hipR = -0.42 * step - 0.02;
+          // the knee folds while that foot is off the ground, just after its
+          // toe-off, and is nearly straight when the leg takes her weight
+          kneeL = -0.06 - 0.80 * Math.max(0, Math.sin(w - 3.73));
+          kneeR = -0.06 - 0.80 * Math.max(0, Math.sin(w - 3.73 + Math.PI));
+          footL = -(hipL + kneeL) * 0.5;                  // keep the sole level
+          footR = -(hipR + kneeR) * 0.5;
+          // arms swing opposite the leg on the same side, loosely bent
+          swingL = -0.30 * step; swingR = 0.30 * step;
           armMixDown = 1.36; armMixElbow = 0.36;
           // she rises over the supporting leg and dips at each footfall
           vrm.scene.position.y = 0.026 * (1 + Math.cos(2*w));
-          walkTwist = Math.sin(w) * 0.10;
+          walkTwist = step * 0.10;
           walkRoll = Math.cos(w) * 0.045;
         } else {
           vrm.scene.position.y = num(p.lift)
