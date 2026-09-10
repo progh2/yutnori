@@ -5,44 +5,68 @@ AI 에이전트(Claude)와 함께 페어 프로그래밍으로 개발한 전통 
 2~4명의 참가자(사람 또는 봇)가 순서대로 턴을 주고받으며, 전통 윷놀이 규칙에 따라 말을 움직여
 먼저 두 말을 모두 완주시키는 쪽이 승리합니다.
 
+🎮 **[바로 플레이하기 (GitHub Pages)](https://progh2.github.io/yutnori/)**
+
 ## 학습 목표
 
 - 사이버 윷놀이 게임을 AI 에이전트와 함께 개발하는 경험을 쌓는다
-- 턴 방식 1:1 게임의 상태 관리와 흐름 제어를 구현한다
+- 턴 방식 게임(2~4인)의 상태 관리와 흐름 제어를 구현한다
 - 윷놀이 말판 위에서의 말 이동(지름길, 업기, 잡기 포함) 로직을 구현한다
 
-## 주요 기능
+## 규칙
 
-- 2~4인 턴 방식 진행 (인원과 그중 사람 수를 시작 화면에서 선택 — 전원 봇이면 관전 모드)
-- 전통 윷판(지름길 포함) 위에서 각 플레이어 말 2개 운용
-- 참가하지 않는 캐릭터는 판 옆 휴식처의 그루터기에 앉아서 구경
-- 도/개/걸/윷/모/빽도 결과와 전통 확률 분포 반영
-- 업기(자동 병합), 잡기, 윷·모·잡기 시 추가 턴 등 전통 규칙 구현
-- three.js 기반 3D 윷 던지기 애니메이션, 코믹한 UI 톤앤매너
-- 전원 봇 모드에서는 봇의 의사결정 과정을 시각적으로 관전 가능
+- **2~4인 턴 방식** — 시작 화면에서 인원과 그중 사람 수를 고릅니다 (전원 봇이면 관전 모드)
+- 플레이어마다 말 2개, 두 말이 모두 완주하면 승리
+- 도/개/걸/윷/모/빽도를 전통 확률 분포(1·3·6·4·1·1 / 16)로 산출
+- **업기**(같은 칸의 같은 편은 함께 이동), **잡기**(상대 말을 출발 전으로), 윷·모·잡기 시 **추가 턴**
+- 꼭짓점에서 **방(중앙)을 지나는 지름길** — 방을 지나면 전통 규칙대로 참먹이 방향으로 꺾어
+  최단 완주가 11칸이 됩니다
 
-## 플레이 하기
+## 판과 연출
 
-- 🎮 [게임 플레이하기 (GitHub Pages)](https://progh2.github.io/yutnori/) — 최신 개발 단계까지 반영된 버전
-- 최신 버전은 [game/index.html](./game/index.html)에서 개발되고, 매 단계 완료 시 Pages(`docs/index.html`)와 Claude Artifact에 동시 배포됩니다.
+- **29밭 원형 윷판** — 북극성(방) + 28수, 천원지방(바깥은 원, 안은 십자)
+- **24절기 지형** — 방과 네 귀를 뺀 24자리가 24절기. 자리마다 그 절기에 맞는 소품을 세우고
+  (입춘 새싹 · 춘분 꽃 · 하지 해바라기 · 추분 호박 · 한로 단풍 · 동지 모닥불 …)
+  자리 이름 아래에 절기 이름을 띄웁니다
+- **사계절 밭** — 앞밭 봄 · 뒷밭 여름 · 쨀밭 가을 · 날밭 겨울. 바닥색과 소품 색조가 계절을 따릅니다
+- **캐릭터 8인** — 각자 외형·대기 자세·대사·목소리·웃음소리가 다릅니다. 참가하지 않는
+  캐릭터는 판 옆 휴식처의 그루터기에 앉아 구경합니다
+- **시네마틱 카메라** — 던질 캐릭터 → 윷 클로즈업 → 표정 클로즈업 → 걷기 추적 → 전체 보기
+- 격투게임식 결과 이펙트, 머리 위 이름표, 말풍선, 현재/다음 턴 패널
+- 우클릭 드래그(터치는 한 손가락)로 시점 회전, 휠/핀치로 확대·축소
+
+## 소리
+
+- 배경음악·윷·발걸음·잡기·완주·팬파레는 **CC0 녹음**을 재생합니다
+- 캐릭터 대사는 브라우저 음성합성으로 읽습니다 (턴 한마디, 결과 낭독, 잡힐 때 비명, 잡을 때 웃음)
+- 오디오 파일을 불러올 수 없는 환경에서는 Web Audio API 합성음으로 자동 폴백
 
 ## 문서 & 링크
 
-- [docs/yutpan.md](./docs/yutpan.md) — **윷판 29밭에 담긴 뜻** (북극성과 28수, 천원지방, 24절기, 자리 이름, 최단 경로 · 출처 포함)
-- [plan.md](./plan.md) — 상세 PRD (게임 규칙 명세, 시스템 아키텍처 UML, 단계별 개발 계획)
-- [PRD 웹 페이지 (GitHub Pages)](https://progh2.github.io/yutnori/prd.html) — plan.md를 다이어그램과 함께 보기 좋게 렌더링한 버전
-- [docs/models/README.md](./docs/models/README.md) · [docs/audio/README.md](./docs/audio/README.md) — 캐릭터 모델·음원 출처와 라이선스
-- [Issues](https://github.com/progh2/yutnori/issues) / [Milestones](https://github.com/progh2/yutnori/milestones) — 단계별 작업 추적
+- [docs/yutpan.md](./docs/yutpan.md) — **윷판 29밭에 담긴 뜻** (북극성과 28수, 천원지방,
+  24절기와 자리별 배치, 자리 이름, 최단 경로 · 출처 포함)
+- [plan.md](./plan.md) — 상세 PRD (게임 규칙 명세, 시스템 아키텍처 UML, 단계별 개발 계획, 설계 결정 기록)
+- [PRD 웹 페이지](https://progh2.github.io/yutnori/prd.html) — plan.md를 다이어그램과 함께 렌더링한 버전
+- [docs/models/README.md](./docs/models/README.md) — 캐릭터 VRM 모델 출처·라이선스와 색조 변경 방식
+- [docs/models/props/README.md](./docs/models/props/README.md) — 24절기 소품·휴식처 모델 출처
+- [docs/audio/README.md](./docs/audio/README.md) — 음원 출처와 라이선스
+- [Issues](https://github.com/progh2/yutnori/issues) / [Milestones](https://github.com/progh2/yutnori/milestones) — 요청·작업 추적
 
 ## 개발 방식
 
-이 프로젝트는 [plan.md](./plan.md)의 9단계 계획에 따라 단계적으로 개발됩니다.
-각 단계는 GitHub Issue로 추적되며, 전체 진행 상황은 Milestone에서 확인할 수 있습니다.
-각 단계의 결과물은 Claude Artifact(단일 HTML 파일)로 게시되어 브라우저에서 바로 실행할 수 있습니다.
+[plan.md](./plan.md)의 9단계 계획에 따라 단계적으로 개발하고, 이후의 개선 요청은
+[Stage 10 마일스톤](https://github.com/progh2/yutnori/milestone/10)에서 요청 하나당 이슈
+하나로 추적합니다. 각 이슈에는 무엇을 왜 그렇게 했는지 기록을 남깁니다.
+
+- 개발: [game/index.html](./game/index.html) (단일 파일)
+- 배포: 같은 파일을 GitHub Pages(`docs/index.html`)와 Claude Artifact에 동시 배포
+- Artifact는 CSP상 스크립트 외 리소스를 불러올 수 없어, 모델·음원·소품은 자동으로
+  코드 내장 대체물로 폴백합니다 (파일 하나가 두 곳에서 모두 동작)
 
 ## 기술 스택
 
-- Vanilla JavaScript (프레임워크 없음)
-- 2D 렌더링: SVG/Canvas (말판, 말, UI)
-- 3D 렌더링: [three.js](https://threejs.org/) (윷 던지기 애니메이션)
-- 배포: Claude Artifact (단일 HTML 파일)
+- Vanilla JavaScript (프레임워크 없음), 단일 HTML 파일
+- 3D: [three.js](https://threejs.org/) 0.180 + [@pixiv/three-vrm](https://github.com/pixiv/three-vrm) 3 (importmap · jsDelivr)
+- 캐릭터: VRoid 공식 샘플 VRM 5종 (+ 색조 변경 3종)
+- 지형지물: [Kenney Nature Kit](https://kenney.nl/assets/nature-kit) (CC0)
+- 소리: CC0 음원 + Web Audio API 합성음 폴백, Web Speech API 음성합성

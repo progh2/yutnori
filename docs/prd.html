@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>사이버 윷놀이 PRD</title>
+<title>별밭 윷놀이 PRD</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   :root{
@@ -283,14 +283,14 @@
 <div class="page">
   <header class="masthead">
     <span class="eyebrow"><span class="dot"></span>Product Requirements Document</span>
-    <h1>🎲 사이버 윷놀이 (Cyber Yutnori)</h1>
-    <p class="sub">AI 에이전트와 함께 페어 프로그래밍으로 만드는 1:1 턴 방식 전통 윷놀이. 규칙 명세부터 아키텍처, 단계별 개발 계획까지 하나의 기준 문서로 정리한다.</p>
+    <h1>✨ 별밭 윷놀이 (Starfield Yutnori)</h1>
+    <p class="sub">AI 에이전트와 함께 페어 프로그래밍으로 만드는 2~4인 턴 방식 전통 윷놀이. 북극성과 28수가 들어앉은 29밭 원형 윷판 위에서 3D 캐릭터가 윷을 던진다. 규칙 명세부터 아키텍처, 단계별 개발 계획과 설계 결정 기록까지 하나의 기준 문서로 정리한다.</p>
     <div class="meta-row">
       <div class="meta-cell"><span class="k">문서 유형</span><span class="v">PRD</span></div>
       <div class="meta-cell"><span class="k">작성자</span><span class="v">seoulax24 + AI 에이전트</span></div>
       <div class="meta-cell"><span class="k">대상 독자</span><span class="v">본인 · 개발 에이전트 · 멘토</span></div>
       <div class="meta-cell"><span class="k">산출물</span><span class="v">단계별 Claude Artifact</span></div>
-      <div class="meta-cell"><span class="k">상태</span><span class="v">Draft — 구현하며 갱신</span></div>
+      <div class="meta-cell"><span class="k">상태</span><span class="v">9단계 완료 · 10단계 진행 중</span></div>
     </div>
   </header>
 
@@ -306,11 +306,13 @@
         <a class="lvl2" href="#s4-2">4.2 윷 던지기 확률</a>
         <a class="lvl2" href="#s4-5">4.5 잡기 & 추가 턴</a>
         <a href="#s5">5 · 플레이어 구성 & 봇</a>
+        <a class="lvl2" href="#s5-3">5.3 배역과 인격</a>
         <a href="#s6">6 · 시스템 아키텍처</a>
         <a class="lvl2" href="#s6-2">클래스 다이어그램</a>
         <a class="lvl2" href="#s6-3">상태 다이어그램</a>
         <a class="lvl2" href="#s6-4">시퀀스 다이어그램</a>
         <a href="#s7">7 · UI/UX 디자인 방향</a>
+        <a class="lvl2" href="#s7-4">7.4 소리와 목소리</a>
         <a href="#s8">8 · 개발 단계별 계획</a>
         <a href="#s9">9 · 완료 기준</a>
         <a href="#s10">10 · 리스크 & 오픈 이슈</a>
@@ -323,11 +325,11 @@
     <section id="s1">
       <h2><span class="num">01</span>개요</h2>
       <h3>1.1 프로젝트 소개</h3>
-      <p>AI 에이전트(Claude)와 함께 페어 프로그래밍 방식으로 전통 윷놀이를 웹 게임으로 구현한다. 2명의 참가자(사람 또는 봇)가 1:1로 턴을 주고받으며 전통 윷놀이 규칙에 따라 말을 움직여 먼저 두 말을 모두 완주시키는 쪽이 승리한다.</p>
+      <p>AI 에이전트(Claude)와 함께 페어 프로그래밍 방식으로 전통 윷놀이를 웹 게임으로 구현한다. 2~4명의 참가자(사람 또는 봇)가 순서대로 턴을 주고받으며 전통 윷놀이 규칙에 따라 말을 움직여 먼저 두 말을 모두 완주시키는 쪽이 승리한다.</p>
       <h3>1.2 학습 목표</h3>
       <ul>
         <li>사이버 윷놀이 게임을 AI 에이전트와 함께 개발하는 경험을 쌓는다</li>
-        <li>턴 방식 1:1 게임의 상태 관리와 흐름 제어를 구현할 수 있다</li>
+        <li>턴 방식 게임(2~4인)의 상태 관리와 흐름 제어를 구현할 수 있다</li>
         <li>윷놀이 말판 위에서의 말 이동(지름길, 업기, 잡기 포함) 로직을 구현할 수 있다</li>
       </ul>
       <h3>1.3 문서 목적 및 대상 독자</h3>
@@ -353,7 +355,7 @@
     <section id="s3">
       <h2><span class="num">03</span>기능 요구사항</h2>
       <ol>
-        <li>참가자 2명이 1:1로 턴 방식 진행 (사람/봇 조합은 시작 시 선택)</li>
+        <li>참가자 2~4명이 순서대로 턴 방식 진행 (인원과 사람/봇 조합은 시작 시 선택)</li>
         <li>전통 윷놀이 말판, 각 플레이어 말 2개</li>
         <li>턴마다 도/개/걸/윷/모 (+ 빽도) 결과를 표시</li>
         <li>말 2개는 업을 수 있으며, 2개 말이 모두 시작점으로 돌아와야 게임 종료</li>
@@ -366,14 +368,14 @@
       <h2><span class="num">04</span>게임 규칙 상세 명세</h2>
 
       <h3 id="s4-1">4.1 말판 구조</h3>
-      <p>전통 윷판을 그래프(노드 + 간선) 구조로 모델링한다.</p>
+      <p>전통 윷판을 그래프(노드 + 간선) 구조로 모델링한다. 고증을 확인한 뒤 <strong>29밭</strong>으로 확정했다 (근거와 출처: <a href="./yutpan.md">docs/yutpan.md</a>).</p>
       <ul>
-        <li>외곽 경로: 20개 노드로 구성된 순환 경로 (출발점 포함)</li>
-        <li>4개의 꼭짓점 노드: 각 꼭짓점은 중앙을 경유하는 <strong>지름길</strong> 간선을 추가로 가짐</li>
-        <li>중앙 노드 1개: 두 대각선 지름길이 교차하는 지점</li>
-        <li>정확한 좌표/세부 노드 수(전통적으로 20~29개 사이로 표기가 다양함)는 1단계(말판 구현)에서 참고 이미지를 기반으로 확정한다</li>
+        <li><strong>29밭</strong> = 외곽 20 + 안쪽 십자 8 + 방(중앙) 1 — 방은 북극성, 나머지 28은 28수로 읽는다</li>
+        <li><strong>원형</strong> — 바깥은 원(하늘), 안은 십자(땅)인 천원지방. 김문표 「사도설」의 해석에 맞는 원래 형태이고, 사각형 윷판은 근대에 단순화된 형태다</li>
+        <li>자리마다 전통 이름이 있다 — 도·개·걸·윷·모 → 뒷… → 찌… → 날… → 참먹이, 십자는 모도·모개·뒷모도·뒷모개·속모·속윷·안찌·사려</li>
+        <li>네 밭(앞·뒷·쨀·날)은 사계절, 방과 네 귀를 뺀 24자리는 24절기로 해석해 화면에 반영했다</li>
       </ul>
-      <p><strong>지름길 사용 규칙</strong>: 말이 꼭짓점 노드에 정확히 도달하면, 다음 이동 시 일반 경로 대신 지름길(중앙 경유)을 선택할 수 있다. 중앙에서 출발점 방향 꼭짓점으로 가는 마지막 지름길은 가장 짧은 완주 경로를 제공한다.</p>
+      <p><strong>지름길 사용 규칙</strong>: 말이 꼭짓점(모 계열)에 정확히 도달하면 다음 이동에서 중앙을 경유하는 지름길을 선택할 수 있다. <strong>방을 지나면 전통 규칙대로 참먹이 방향으로 꺾어</strong> 나가므로 최단 완주는 11칸(모 → 모도 → 모개 → 방 → 안찌 → 사려 → 완주)이다.</p>
 
       <h3 id="s4-2">4.2 윷 던지기 확률 (전통 확률 기반)</h3>
       <p>윷가락 4개, 각각 앞/뒤 50%를 가정한 이항분포를 사용한다.</p>
@@ -422,26 +424,56 @@
       <h2><span class="num">05</span>플레이어 구성 & 봇</h2>
       <h3>5.1 시작 플로우</h3>
       <ol>
-        <li>게임 시작 시 "참가자 2명 중 사람은 몇 명인가요?" 질문 (0명 / 1명 / 2명 중 선택)</li>
+        <li>두 단계로 묻는다 — "몇 명이 같이 하나요?"(2 / 3 / 4) → "그중 사람은 몇 명인가요?"(0 ~ 인원 수)</li>
         <li>선택에 따라 나머지는 봇으로 자동 배정</li>
-        <li>0명(전원 봇) 선택 시: 사람 플레이어의 개입 없이 봇 2명이 자동으로 턴을 주고받는 관전 모드 화면이 표시됨</li>
+        <li>0명(전원 봇) 선택 시: 사람의 개입 없이 봇들이 자동으로 턴을 주고받는 관전 모드가 표시됨</li>
+        <li>인원이 4명 미만이면 남는 캐릭터는 판 옆 휴식처의 그루터기에 앉아 구경한다</li>
       </ol>
       <h3>5.2 봇 AI 동작 방식</h3>
-      <ul>
-        <li>기본 전략: 가능한 이동 옵션(어떤 말을 움직일지, 지름길 사용 여부) 중 <strong>랜덤 유효 선택</strong> (추후 난이도별 전략 확장 가능하도록 인터페이스 분리)</li>
-        <li>봇의 턴에는 "생각 중" 표시(짧은 딜레이 + 시각적 하이라이트) 후 선택한 말/경로를 하이라이트로 보여준 뒤 이동 애니메이션 실행</li>
-        <li>전원 봇 모드에서도 동일한 시각화를 적용해 관전자가 봇의 의사결정을 따라갈 수 있게 한다</li>
-      </ul>
+      <p>당초 "랜덤 유효 선택"으로 계획했으나, 랜덤은 관전 모드에서 납득이 안 되는 수를 두어 <strong>점수 기반 휴리스틱</strong>으로 구현했다(<code>planMove</code>). 사람 플레이어의 말 선택도 같은 함수를 쓰므로 어떤 말을 옮길지 묻는 UI가 없다.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>항목</th><th>점수</th></tr></thead>
+        <tbody>
+          <tr><td>완주</td><td>말 1개당 +120</td></tr>
+          <tr><td>잡기</td><td>잡는 상대 말 1개당 +80</td></tr>
+          <tr><td>업기(같은 편과 합류)</td><td>+18</td></tr>
+          <tr><td>진행도</td><td>도착 자리의 진행도 × 0.8</td></tr>
+          <tr><td>새 말 출발</td><td>−4 (다른 선택이 없을 때의 차선)</td></tr>
+        </tbody>
+      </table></div>
+      <p>즉 <strong>완주 &gt; 잡기 &gt; 업기 &gt; 전진</strong> 순으로 고른다. 지름길 진입은 사람에게만 묻고, 봇은 거의 항상 이득이므로 자동으로 탄다. 봇의 턴에는 "🤖 (이름) 생각 중…"을 짧게 띄우고, 전원 봇 모드에서도 사람이 볼 때와 똑같은 연출(카메라·표정·대사)을 적용한다.</p>
+
+      <h3 id="s5-3">5.3 배역과 인격</h3>
+      <p>말은 최대 8개(4인 × 2개)이고 <strong>모두 서로 다른 캐릭터</strong>가 맡는다. 어느 팀인지는 발밑 팀 색상 링과 머리 위 이름표로 구분한다. 캐릭터마다 대기 자세·인사·생각·환호·낙담 포즈, 대사 풀(잡담·결과별 감정·잡기·잡힘·완주·업기·승패), 목소리 피치/속도, 웃음소리가 따로 있다.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>이름</th><th>성격</th><th>대기 자세</th><th>목소리</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>시노</td><td>차분한 학생회장</td><td>두 손을 앞으로 모음</td><td>보통·차분</td></tr>
+          <tr><td>2</td><td>비타</td><td>씩씩한 모험가</td><td>두 손을 허리 앞에</td><td>조금 높고 빠름</td></tr>
+          <tr><td>3</td><td>비비</td><td>발랄한 아이</td><td>한 손을 살짝 들고</td><td>높고 빠름</td></tr>
+          <tr><td>4</td><td>빅토리아</td><td>우아한 아가씨</td><td>한 손을 가슴에</td><td>낮고 느림</td></tr>
+          <tr><td>5</td><td>후미리야</td><td>느긋하고 능글맞은 소년</td><td>한 팔을 뒤로, 삐딱하게</td><td>가장 낮음</td></tr>
+          <tr><td>6</td><td>새별</td><td>별을 세는 조용한 몽상가</td><td>두 손을 모으고 고개를 숙임</td><td>높고 느림</td></tr>
+          <tr><td>7</td><td>노을</td><td>여유롭고 능청스러운 언니</td><td>팔짱</td><td>낮고 여유롭게</td></tr>
+          <tr><td>8</td><td>미르</td><td>당당한 꼬마 대장</td><td>허리에 손</td><td>가장 높고 빠름</td></tr>
+        </tbody>
+      </table></div>
+      <p>모델은 5종을 확보했고 6~8번은 앞 모델의 머리·의상 텍스처 색조만 바꿔 쓴다 (10.2.1).</p>
     </section>
 
     <section id="s6">
       <h2><span class="num">06</span>시스템 아키텍처</h2>
       <h3>6.1 기술 스택</h3>
       <ul>
-        <li>단일 HTML 파일 (Claude Artifact로 게시, 단계별로 갱신)</li>
-        <li>렌더링: 말판/UI는 2D (SVG 또는 Canvas), 윷 던지기는 <strong>three.js</strong> 기반 3D 애니메이션</li>
-        <li>상태 관리: 순수 JS 객체/클래스 (프레임워크 없이 vanilla JS)</li>
-        <li>외부 라이브러리는 cdnjs.cloudflare.com에서 three.js UMD 빌드를 고정 버전으로 로드</li>
+        <li>단일 HTML 파일. <code>game/index.html</code>에서 개발하고 <code>docs/index.html</code>(GitHub Pages)과 Claude Artifact에 같은 파일을 배포한다</li>
+        <li>렌더링: <strong>말판·캐릭터·윷 던지기 모두 three.js 기반 3D 장면 하나</strong> (5단계에서 2D SVG 말판을 3D로 교체 — 10.2 참고). 시작 화면도 같은 씬을 쓴다</li>
+        <li>라이브러리: <code>&lt;script type="importmap"&gt;</code>으로 jsDelivr에서 three 0.180 ESM + <code>@pixiv/three-vrm@3</code>을 고정 버전으로 로드</li>
+        <li>캐릭터: VRM 모델 5종 + 색조 변경 3종 = 8인 (10.2.1)</li>
+        <li>지형지물: Kenney Nature Kit(CC0) GLB 61개 — 24절기 소품, 귀 석주, 참먹이 문, 휴식처</li>
+        <li>소리: 실제 CC0 녹음을 재생하고, 파일을 못 불러오는 환경에서는 Web Audio API 합성음으로 폴백 (10.3)</li>
+        <li>목소리: 브라우저 음성합성(Web Speech API). 대사를 큐에 넣어 한 번에 하나만 읽는다 (10.4)</li>
+        <li>HUD: 3D 화면 위에 떠 있는 HTML 오버레이 (자리 이름·절기, 캐릭터 이름표, 말풍선, 결과 이펙트, 현재/다음 턴 패널) — 3D 좌표를 카메라로 투영해 위치를 잡는다</li>
+        <li>상태 관리: 순수 JS 객체 (프레임워크 없이 vanilla JS). 진행 중인 턴은 세대(generation) 값으로 취소한다</li>
       </ul>
 
       <h3 id="s6-2">6.2 클래스 다이어그램</h3>
@@ -578,15 +610,27 @@ sequenceDiagram
       <p>트리컬(tricky)하고 코믹한 디자인. 진지한 전통 공예품 느낌보다는 장난스럽고 생동감 있는 색감/모션을 사용한다 (말에 표정을 넣거나, 결과에 따라 과장된 리액션 연출 등 자유롭게 판단).</p>
       <h3>7.2 3D 윷 던지기 (three.js)</h3>
       <ul>
-        <li>별도의 3D 씬에서 윷가락 4개가 던져지고 회전하며 바닥에 떨어지는 애니메이션</li>
-        <li>애니메이션 종료 후 각 가락의 앞/뒤 상태를 판정해 결과(도/개/걸/윷/모/빽도) 산출 및 표시</li>
-        <li>코믹한 느낌을 위해 통통 튀는 과장된 물리감, 효과음/이펙트(선택) 고려</li>
+        <li>별도 화면이 아니라 <strong>말판과 같은 씬에서 캐릭터가 직접 던진다</strong>. 카메라가 던지기 전에 그 캐릭터를 보고 있다가, 윷으로 다이브해 클로즈업하고, 결과가 나오면 얼굴로 돌아온다</li>
+        <li>윷가락 4개가 회전하며 떨어지고, 각 가락의 앞/뒤로 결과(도/개/걸/윷/모/빽도)를 판정</li>
+        <li>결과는 격투게임식 이펙트로 화면 가득 띄운다 — 두꺼운 외곽선 글자 + 폭발 링 + 방사 스피드라인 + 화면 흔들림, "+3칸 이동"이 옆에서 날아 들어와 함께 사라짐</li>
       </ul>
       <h3>7.3 말판 UI</h3>
       <ul>
-        <li>2D로 렌더링된 전통 윷판 위에 말(아이콘/이모지/커스텀 그래픽)을 배치</li>
-        <li>업힌 말은 시각적으로 겹치거나 묶음 표시(예: 뱃지에 숫자 "2")로 구분</li>
-        <li>현재 턴 플레이어, 남은 추가 턴 수를 항상 화면에 표시</li>
+        <li>3D 원형 윷판. 네 밭에 계절색 바닥(봄 새싹빛 · 여름 짙은 초록 · 가을 황금 · 겨울 회청)을 깔고, 24자리에는 그 자리의 절기에 맞는 소품을 세운다</li>
+        <li>자리마다 이름과 절기를 라벨로 띄우고, 이름의 짐승(도 1 · 개 2 · 걸 3 · 윷 4)은 발판 앞 조약돌 개수로 표시</li>
+        <li>캐릭터는 자리 표식 옆에 서고 소품은 반대쪽으로 배치해 겹치지 않게 한다</li>
+        <li>업힌 말은 나란히 서서 안쪽 손을 잡고 함께 흔든다 (같은 칸에 서는 건 항상 같은 편)</li>
+        <li>머리 위 이름표(팀 색상 테두리), 말풍선, 감정 이모지가 캐릭터를 따라다닌다</li>
+        <li>왼쪽 상단에 <strong>현재 턴 / 다음 턴</strong>과 남은 추가 턴 수를 표시</li>
+        <li>우클릭 드래그(터치는 한 손가락)로 시점 회전, 휠/핀치로 확대·축소, 연출 속도 토글(1x / 2x)</li>
+      </ul>
+      <h3 id="s7-4">7.4 소리와 목소리</h3>
+      <ul>
+        <li>배경음악·윷 던지기·발걸음·잡기·완주·승리 팬파레는 CC0 녹음을 재생 (<a href="./audio/README.md">docs/audio/README.md</a>)</li>
+        <li>빽도는 잡기 타격음을 0.6배속으로 낮춰 침울한 톤으로 쓴다</li>
+        <li>캐릭터 대사는 브라우저 음성합성으로 읽는다 — 턴 시작 한마디, 결과 낭독, 잡힐 때 비명, 잡을 때 웃음. 캐릭터별 피치·속도가 다르고, OS에 한국어 음성이 여러 개면 하나씩 배정</li>
+        <li>같은 소리를 반복하지 않는다: 업기 인사와 투닥 효과음은 <strong>만났을 때 한 번만</strong> 나고, 그 뒤에는 둘이 각자 평소 대사를 주고받는다</li>
+        <li>시작 화면 잡담은 줄 전체에 하나의 시계를 두고 <strong>20초에 한 마디</strong>, 순번대로 돌아간다</li>
       </ul>
     </section>
 
@@ -595,34 +639,42 @@ sequenceDiagram
       <p class="lede">각 단계는 독립적으로 완료 가능한 단위로 나누며, 완료 시 해당 결과물을 Claude Artifact로 등록한다. 단계 간 전환 시 새 대화창 또는 <code>/clear</code> 사용을 권장한다. 진행 상황은 <a href="https://github.com/progh2/yutnori/milestones">GitHub Milestones</a>에서 확인할 수 있다.</p>
       <div class="stage-grid">
         <div class="stage"><span class="idx">1</span><span class="name">윷말판 렌더링</span><span class="detail"><b>산출물</b> 정적 2D 윷판(20+ 노드, 지름길 표시) · <b>완료 기준</b> 노드 좌표가 전통 윷판과 일치, 지름길 경로가 구분되어 보임</span></div>
-        <div class="stage"><span class="idx">2</span><span class="name">플레이어/봇 설정 화면</span><span class="detail"><b>산출물</b> 인원 선택 UI → 사람/봇 배정 · <b>완료 기준</b> 0/1/2명 선택 시 각각 올바르게 배정되고 게임 시작 가능</span></div>
+        <div class="stage"><span class="idx">2</span><span class="name">플레이어/봇 설정 화면</span><span class="detail"><b>산출물</b> 인원(2~4) 선택 → 사람 수 선택 → 사람/봇 배정 · <b>완료 기준</b> 각 조합이 올바르게 배정되고 게임 시작 가능</span></div>
         <div class="stage"><span class="idx">3</span><span class="name">턴 방식 윷 던지기 (로직)</span><span class="detail"><b>산출물</b> 버튼 클릭 → 확률표 기반 결과 산출/표시(3D 이전) · <b>완료 기준</b> 결과 분포가 4.2 확률표와 근사 일치</span></div>
         <div class="stage"><span class="idx">4</span><span class="name">3D 윷 던지기 애니메이션</span><span class="detail"><b>산출물</b> three.js 기반 3D 윷가락 애니메이션 · <b>완료 기준</b> 애니메이션 후 3단계 로직과 동일한 결과를 시각적으로 재현</span></div>
         <div class="stage"><span class="idx">5</span><span class="name">말 이동 로직</span><span class="detail"><b>산출물</b> 기본 전진/후퇴, 지름길 선택 UI · <b>완료 기준</b> 지정된 칸 수만큼 정확히 이동, 지름길 선택 시 정확한 경로로 이동</span></div>
         <div class="stage"><span class="idx">6</span><span class="name">업기 로직</span><span class="detail"><b>산출물</b> 같은 칸 도착 시 자동 병합 · <b>완료 기준</b> 병합된 말이 하나의 유닛으로 함께 이동/표시됨</span></div>
         <div class="stage"><span class="idx">7</span><span class="name">잡기 & 추가 턴</span><span class="detail"><b>산출물</b> 상대 말 리셋 + 추가 턴 큐 처리 · <b>완료 기준</b> 잡기 시 상대 말이 정확히 복귀, 추가 턴 누적 동작 확인</span></div>
-        <div class="stage"><span class="idx">8</span><span class="name">봇 AI & 시각화</span><span class="detail"><b>산출물</b> 랜덤 유효 선택 전략 + 선택 과정 하이라이트 · <b>완료 기준</b> 전원 봇 모드에서 관전만으로 게임이 끝까지 자동 진행됨</span></div>
+        <div class="stage"><span class="idx">8</span><span class="name">봇 AI & 시각화</span><span class="detail"><b>산출물</b> 점수 기반 휴리스틱 + 선택 과정 시각화 · <b>완료 기준</b> 전원 봇 모드에서 관전만으로 게임이 끝까지 자동 진행됨</span></div>
         <div class="stage"><span class="idx">9</span><span class="name">승리 조건 & 통합 테스트</span><span class="detail"><b>산출물</b> 전체 게임 통합, 승리 처리 및 재시작 UI · <b>완료 기준</b> 2개 말 완주 시 즉시 승리 화면, 처음부터 끝까지 버그 없이 1판 플레이 가능</span></div>
+        <div class="stage"><span class="idx">10</span><span class="name">연출·고증·에셋 개선</span><span class="detail"><b>산출물</b> 29밭 고증, 24절기 지형, VRM 캐릭터 8인, CC0 음원, TTS, 2~4인 플레이 · <b>완료 기준</b> 요청 하나당 이슈 하나로 추적하고, 닫힐 때마다 Pages·Artifact에 배포 (<a href="https://github.com/progh2/yutnori/milestone/10">Milestone 10</a>)</span></div>
       </div>
     </section>
 
     <section id="s9">
       <h2><span class="num">09</span>완료 기준 (Definition of Done)</h2>
       <ul class="dod">
-        <li><input type="checkbox" disabled> 위 9단계가 모두 하나의 최종 Artifact에 통합되어 동작</li>
-        <li><input type="checkbox" disabled> 사람 2명 / 사람 1명+봇 1명 / 봇 2명 조합 모두 정상 플레이 가능</li>
-        <li><input type="checkbox" disabled> 전통 규칙(지름길, 업기, 잡기, 추가 턴, 빽도)이 모두 반영됨</li>
-        <li><input type="checkbox" disabled> 3D 윷 던지기 애니메이션이 정상 동작하며 결과와 일치</li>
-        <li><input type="checkbox" disabled> 멘토가 이 문서만으로 게임 규칙과 아키텍처를 이해할 수 있음</li>
+        <li><input type="checkbox" disabled checked> 위 9단계가 모두 하나의 결과물에 통합되어 동작</li>
+        <li><input type="checkbox" disabled checked> 사람 2명 / 사람 1명+봇 1명 / 봇 2명 조합 모두 정상 플레이 가능</li>
+        <li><input type="checkbox" disabled checked> 3인·4인 게임도 같은 규칙으로 순서대로 진행</li>
+        <li><input type="checkbox" disabled checked> 전통 규칙(지름길, 업기, 잡기, 추가 턴, 빽도)이 모두 반영됨</li>
+        <li><input type="checkbox" disabled checked> 3D 윷 던지기 애니메이션이 정상 동작하며 결과와 일치</li>
+        <li><input type="checkbox" disabled checked> 말판 고증 — 29밭(북극성 + 28수), 천원지방 원형, 사계절·24절기, 자리 이름 (<a href="./yutpan.md">docs/yutpan.md</a>)</li>
+        <li><input type="checkbox" disabled checked> 캐릭터 8인이 각자 다른 외형·포즈·대사·목소리를 가짐</li>
+        <li><input type="checkbox" disabled checked> 참가하지 않는 캐릭터는 휴식처에서 앉아 대기</li>
+        <li><input type="checkbox" disabled checked> 소리·목소리는 CC0 음원과 브라우저 음성합성으로 처리하며 라이선스 출처를 문서화</li>
+        <li><input type="checkbox" disabled checked> 멘토가 이 문서만으로 게임 규칙과 아키텍처를 이해할 수 있음</li>
       </ul>
     </section>
 
     <section id="s10">
       <h2><span class="num">10</span>리스크 & 오픈 이슈</h2>
       <ul>
-        <li>말판 정확한 노드 좌표/개수는 1단계 구현 시 확정 필요 (현재는 설계 수준 합의)</li>
-        <li>three.js 3D 애니메이션과 2D 말판 UI 간 전환 연출 방식은 4단계에서 구체화</li>
-        <li>봇 전략은 1차로 랜덤 선택만 구현, 고도화(휴리스틱 등)는 범위 밖으로 간주</li>
+        <li><s>말판 정확한 노드 좌표/개수는 1단계 구현 시 확정 필요</s> → 고증을 확인해 29밭 원형으로 확정 (4.1)</li>
+        <li><s>three.js 3D 애니메이션과 2D 말판 UI 간 전환 연출</s> → 말판까지 3D로 통일해 전환 자체가 없어짐 (10.2)</li>
+        <li><s>봇 전략은 1차로 랜덤 선택만</s> → 점수 기반 휴리스틱으로 구현 (5.2)</li>
+        <li>남은 것: 배역 8자리에 원본 모델은 5종뿐이어서 3자리는 색조 변경으로 채운다 (10.2.1). 추가 모델을 확보하면 <code>IDOL_ROSTER</code>에 한 줄 추가로 대체된다</li>
+        <li>남은 것: 2인 게임에도 8명 모델을 모두 불러와 첫 진입이 느리다 — 인원 확정 후 필요한 만큼만 불러오는 방식이 필요</li>
       </ul>
       <h3>10.1 설계 결정 근거</h3>
       <ul>
@@ -630,12 +682,45 @@ sequenceDiagram
         <li><strong>추가 턴 누적 방식</strong> — 윷/모와 잡기가 동시에 발생하면 추가 턴을 누적(합산) 처리 — 일부 실제 규칙과 다를 수 있으나 구현/테스트 단순성을 위해 채택</li>
         <li><strong>봇 시각화</strong> — 전원 봇 모드에서도 학습 목적(턴 방식 진행 시연)을 살리기 위해 각 턴의 의사결정 과정을 사람이 보는 것과 동일하게 노출</li>
       </ul>
+
+      <h3>10.2 말판 3D 전환 (5단계, 아키텍처 변경)</h3>
+      <p>당초 6.1은 말판을 2D SVG로, 윷 던지기만 3D로 두는 것으로 설계했으나, 5단계 진행 중 요청에 따라 <strong>말판·말·시작 화면을 모두 3D로 통일</strong>했다. 어떤 말을 옮길지는 수동 선택 UI 대신 5.2의 점수 함수로 자동 결정하고, 지름길 진입 여부만 그 순간에 따로 묻는다.</p>
+
+      <h3>10.2.1 캐릭터: VRM 모델 (GitHub Pages 전용)</h3>
+      <p>말(캐릭터)은 <strong>VRoid 프로젝트(pixiv)가 공개한 VRM 공식 샘플 모델</strong>을 쓴다. 배역은 8자리(4인 × 2개)인데 재배포가 허용된 모델은 5종을 확보했고, 남는 3자리는 앞 모델의 <strong>머리·의상 텍스처 색조만 바꿔</strong> 쓴다.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>캐릭터</th><th>파일</th><th>처리</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>千駄ヶ谷篠 (시노)</td><td><code>docs/models/shino.vrm</code></td><td>원본</td></tr>
+          <tr><td>2</td><td>ヴィータ (비타)</td><td><code>docs/models/vita.vrm</code></td><td>원본</td></tr>
+          <tr><td>3</td><td>ビビ (비비)</td><td><code>docs/models/vivi.vrm</code></td><td>원본</td></tr>
+          <tr><td>4</td><td>ヴィクトリア (빅토리아)</td><td><code>docs/models/victoria.vrm</code></td><td>원본</td></tr>
+          <tr><td>5</td><td>桜田史利矢 (후미리야)</td><td><code>docs/models/fumiriya.vrm</code></td><td>원본</td></tr>
+          <tr><td>6</td><td>새별</td><td>shino.vrm</td><td>색조 +155°</td></tr>
+          <tr><td>7</td><td>노을</td><td>vita.vrm</td><td>색조 +300°</td></tr>
+          <tr><td>8</td><td>미르</td><td>vivi.vrm</td><td>색조 +205°</td></tr>
+        </tbody>
+      </table></div>
+      <p>모든 파일이 VRM 메타데이터에 <code>redistribution=allow</code>, <code>modification=allow</code>, 상업이용 허용, 크레딧 불필요를 명시하고 있어 공개 저장소 커밋이 가능하다 (상세: <a href="./models/README.md">docs/models/README.md</a>). 원본 15~20MB를 텍스처만 1024로 재인코딩해 각 6~8MB로 줄였다.</p>
+      <p><strong>색조 변경 방식</strong>: MToon 셰이더는 <code>텍스처 × 색상</code>이라 재질 색만 바꾸면 짙은 머리는 어두워지기만 한다. 그래서 머리·의상 텍스처를 캔버스에 다시 그리면서 <code>hue-rotate</code>를 걸어 새 텍스처로 교체한다. 피부·얼굴·눈 재질과 그 재질이 쓰는 이미지를 공유하는 텍스처는 제외해서 피부색은 건드리지 않는다.</p>
+      <p><strong>Artifact 폴백</strong>: Artifact는 CSP상 스크립트 외의 리소스를 불러올 수 없어 <code>.vrm</code> fetch가 차단된다. 이 경우 코드로 제작한 대체 캐릭터로 자동 폴백하므로, 같은 파일 하나로 Pages에서는 VRM 모델이, Artifact에서는 폴백 캐릭터가 동작한다.</p>
+
+      <h3>10.3 오디오: CC0 음원 + 합성음 폴백</h3>
+      <p>처음에는 Artifact의 CSP 때문에 외부 오디오 파일을 쓸 수 없다고 보고 Web Audio API로 전부 합성했다. 그러나 합성음이 어색하다는 지적을 받아, <strong>GitHub Pages에서는 실제 CC0 녹음을 재생하고 Artifact에서는 합성음으로 폴백</strong>하는 이중 구조로 바꿨다. <code>canplaythrough</code> 이벤트로 재생 가능 여부를 확인해, 불러오지 못한 소리만 합성음으로 대체한다.</p>
+
+      <h3>10.4 캐릭터 목소리: 브라우저 음성합성</h3>
+      <p>음원 파일로는 "도·개·걸·윷" 같은 대사를 구할 수 없어 Web Speech API를 쓴다. OS에 설치된 한국어 음성에 의존하므로 음성이 없는 환경에서는 조용히 무음이 된다. 구현에서 걸렸던 것들:</p>
+      <ul>
+        <li>새 대사마다 <code>cancel()</code>을 부르면 엔진이 pause 상태로 남아 이후 대사가 조용히 삼켜진다 → 대사를 큐에 넣어 하나씩 재생하고, 재생 전 <code>resume()</code>을 호출</li>
+        <li>시작 직후에는 음성 목록이 비어 한국어 음성을 못 잡는다 → <code>voiceschanged</code> 외에 0.3초 간격으로 최대 6초까지 다시 확인</li>
+        <li><code>speak()</code>가 아무 이벤트도 내지 않고 끝나는 경우가 있다 → 0.7초 안에 시작되지 않으면 한 번 재시도하고, <code>onend</code>가 오지 않는 브라우저를 위해 감시 타이머를 둔다</li>
+      </ul>
     </section>
 
   </main>
 
   <footer>
-    <span>사이버 윷놀이 · PRD</span>
+    <span>별밭 윷놀이 · PRD</span>
     <span><a href="https://github.com/progh2/yutnori">github.com/progh2/yutnori</a></span>
   </footer>
 </div>
