@@ -29,6 +29,11 @@
     font-family: "Noto Sans KR", sans-serif;
   }
   [hidden]{ display: none !important; }
+  /* announced to screen readers, never drawn */
+  .sr-only{
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
 
   .screen3d{ position: fixed; inset: 0; }
   .screen3d canvas{ display:block; width:100%; height:100%; touch-action:none; }
@@ -110,6 +115,25 @@
   .turn-row.now{ font-size:13.5px; color:#ffe6a8; }
   .turn-row.next{ opacity:.72; }
   .turn-extra{ font-size:10.5px; color:#ffd98a; }
+  /* who is ahead: one row per player, one bar per 말 */
+  .turn-standings{
+    border-top:1px solid rgba(251,241,217,.16); margin-top:2px; padding-top:6px;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .stand-row{ display:flex; align-items:center; gap:6px; font-size:10.5px; }
+  .stand-row.me .stand-name{ color:#ffe6a8; }
+  .stand-name{ width:26px; flex:none; color:var(--ink-muted); }
+  .stand-bars{ display:flex; gap:3px; flex:1; }
+  .stand-bar{
+    position:relative; height:7px; flex:1; border-radius:999px;
+    background:rgba(251,241,217,.14); overflow:hidden;
+  }
+  .stand-bar i{
+    position:absolute; left:0; top:0; bottom:0; border-radius:999px;
+    background:var(--team); transition:width .35s ease;
+  }
+  .stand-bar.done{ background:var(--team); box-shadow:0 0 7px -1px var(--team); }
+  .stand-done{ width:24px; flex:none; text-align:right; color:var(--ink-muted); }
   .player-badge.active{ border-color: var(--gold); background: rgba(242,177,52,.18); box-shadow: 0 0 0 2px rgba(242,177,52,.3) inset; }
   .vs-divider{ font-family:"Jua",sans-serif; color: var(--ink-muted); font-size:12px; }
 
@@ -519,9 +543,9 @@
       <div class="brand"><h1>✨ 별밭 윷놀이</h1></div>
       <div class="stagebar"><span class="pill">STAGE 9 / 9</span><span>규칙 전체 구현</span></div>
       <div class="hud-buttons">
-        <button class="audio-toggle" id="speed-toggle" onclick="toggleSpeed()" title="연출 속도">⏩ 1x</button>
-        <button class="audio-toggle on" id="voice-toggle" onclick="toggleVoice()" title="캐릭터 목소리(브라우저 음성합성)">🗣️</button>
-        <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기">🔊</button>
+        <button class="audio-toggle" id="speed-toggle" onclick="toggleSpeed()" title="연출 속도" aria-label="연출 속도 바꾸기">⏩ 1x</button>
+        <button class="audio-toggle on" id="voice-toggle" onclick="toggleVoice()" title="캐릭터 목소리(브라우저 음성합성)" aria-label="캐릭터 목소리 켜고 끄기">🗣️</button>
+        <button class="audio-toggle" id="audio-toggle" onclick="toggleAudio()" title="효과음/배경음악 켜고 끄기" aria-label="소리 켜고 끄기">🔊</button>
       </div>
     </div>
     <div class="hud-center-top">
@@ -543,7 +567,9 @@
       </div>
     </div>
   </div>
-  <div class="bot-thinking" id="bot-thinking" hidden>🤖 생각 중…</div>
+  <div class="bot-thinking" id="bot-thinking" role="status" hidden>🤖 생각 중…</div>
+  <!-- screen readers follow the game through this; it is never shown -->
+  <p id="live-region" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
   <div class="reaction-bubble" id="reaction-bubble"></div>
   <div class="shortcut-prompt" id="shortcut-prompt" hidden>
     <span>🔀 꼭짓점 도착! 중앙 지름길로 갈까요?</span>
@@ -2014,10 +2040,15 @@
       });
     }
 
+    // Someone who asked for less motion still needs to follow the game, so the
+    // pieces keep walking (at double speed) but the camera stops swooping.
+    const REDUCE_MOTION = !!(window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
     // ---- animation queue (drives camera tweens + piece hops from one loop) ----
     const animations = [];
     function animate(duration, onUpdate){
-      const d = Math.max(16, duration / (window.TIME_SCALE || 1));
+      const d = Math.max(16, duration / ((window.TIME_SCALE || 1) * (REDUCE_MOTION ? 2 : 1)));
       return new Promise(resolve => { animations.push({ start: performance.now(), duration: d, onUpdate, resolve }); });
     }
 
@@ -2028,6 +2059,12 @@
     camera.lookAt(lookAt);
 
     function tweenCamera(toPos, toLook, duration){
+      if (REDUCE_MOTION){
+        camera.position.copy(toPos);
+        lookAt.copy(toLook);
+        camera.lookAt(lookAt);
+        return Promise.resolve();
+      }
       const fromPos = camera.position.clone();
       const fromLook = lookAt.clone();
       return animate(duration, t => {
@@ -2624,8 +2661,39 @@
     };
     box.innerHTML = row('현재', cur, 'now')
       + (n > 1 ? row('다음', nxt, 'next') : '')
-      + (state.extraThrows > 0 ? '<div class="turn-extra">➕ 한 번 더 · ' + state.extraThrows + '회</div>' : '');
+      + (state.extraThrows > 0 ? '<div class="turn-extra">➕ 한 번 더 · ' + state.extraThrows + '회</div>' : '')
+      + standings();
     box.hidden = false;
+  }
+
+  // 0 at the bench, 1 at home — PROGRESS is 1..20 around the ring
+  function pieceProgress(piece){
+    if (piece.place === 'finished') return 1;
+    if (piece.place !== 'onboard') return 0;
+    return Math.min(1, (PROGRESS[piece.nodeId] || 0) / 20);
+  }
+  function standings(){
+    const colours = ['#f2b134','#d94f8c','#4fb3d9','#74d17a'];
+    return '<div class="turn-standings">' + state.players.map(pl => {
+      const mine = state.pieces.filter(pc => pc.owner === pl.id);
+      const done = mine.filter(pc => pc.place === 'finished').length;
+      const bars = mine.map(pc => {
+        const v = pieceProgress(pc);
+        return pc.place === 'finished'
+          ? '<span class="stand-bar done"></span>'
+          : '<span class="stand-bar"><i style="width:' + Math.round(v*100) + '%"></i></span>';
+      }).join('');
+      return '<div class="stand-row' + (pl.id === state.currentPlayerIndex ? ' me' : '')
+        + '" style="--team:' + colours[pl.id % colours.length] + '">'
+        + '<span class="stand-name">' + pl.name + '</span>'
+        + '<span class="stand-bars">' + bars + '</span>'
+        + '<span class="stand-done">' + done + '/' + mine.length + '</span></div>';
+    }).join('') + '</div>';
+  }
+  // one place to say out loud what just happened
+  function announce(text){
+    const el = document.getElementById('live-region');
+    if (el) el.textContent = text;
   }
   function renderHistory(){
     const box = document.getElementById('throw-history');
@@ -2918,6 +2986,7 @@
       .join('  /  ');
     document.getElementById('go-win-name').textContent = winName;
     document.getElementById('go-lose-name').textContent = loseName;
+    announce('게임 종료. ' + winName + ' 승리.');
     el.hidden = false;
     void el.offsetWidth;
     el.classList.add('go');
@@ -3018,6 +3087,9 @@
     board3d.hideSticks();
 
     showImpact(outcome);
+    announce(state.players[owner].name + ' ' + thrower.charName + ': ' + outcome.result
+      + ' ' + (outcome.steps > 0 ? '+' : '') + outcome.steps + '칸'
+      + (outcome.extraTurn ? ', 한 번 더' : ''));
     sayAloud(outcome.result + (outcome.extraTurn ? '! 한 번 더!' : '!'), thrower.personaIndex);
     if (outcome.extraTurn) playDing();
     if (outcome.category==='backdo') playSad();
@@ -3066,6 +3138,7 @@
       } else {
         captured = await captureAt(land, owner);
         if (captured){
+          announce(thrower.charName + '이(가) 상대 말 ' + captured + '개를 잡았습니다. 한 번 더.');
           showImpact({ result:'잡았다!', steps:0, extraTurn:true, tone:'red' });
           sayLine(meshes[0], 'capture', 2400);
           setTimeout(() => laughAloud(meshes[0] && meshes[0].personaIndex), 900);
@@ -3105,11 +3178,29 @@
     }
     renderPlayerBar();
     await board3d.toOverview();
+    renderTurnPanel();
 
     state.busy = false;
     btn.disabled = false;
     maybeRunBot();
   }
+
+  // ---- keyboard: throw with space or enter, answer the 지름길 prompt with y/n ----
+  window.addEventListener('keydown', e => {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    const prompt = document.getElementById('shortcut-prompt');
+    if (prompt && !prompt.hidden){
+      const yes = document.getElementById('shortcut-yes'), no = document.getElementById('shortcut-no');
+      if (e.key === 'y' || e.key === 'Y' || e.key === 'ArrowLeft'){ e.preventDefault(); yes.click(); }
+      if (e.key === 'n' || e.key === 'N' || e.key === 'ArrowRight'){ e.preventDefault(); no.click(); }
+      return;
+    }
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    const btn = document.getElementById('throw-btn');
+    // let the button handle it when it already has focus
+    if (document.activeElement === btn || document.getElementById('screen-game').hidden) return;
+    if (btn && !btn.disabled){ e.preventDefault(); takeTurn(); }
+  });
 
   // ---- bots play themselves (plan.md 5.2 / stage 8) ----
   function maybeRunBot(){
@@ -3117,7 +3208,11 @@
     const p = state.players[state.currentPlayerIndex];
     const btn = document.getElementById('throw-btn');
     if (btn) btn.disabled = !!(p && p.type === 'bot');
-    if (!p || p.type !== 'bot') return;
+    if (!p) return;
+    if (p.type !== 'bot'){
+      announce(p.name + ' 차례입니다. 스페이스나 엔터로 윷을 던지세요.');
+      return;
+    }
     setBotThinking(true);
     setTimeout(() => { setBotThinking(false); takeTurn(); }, 850);
   }

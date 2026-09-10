@@ -1,0 +1,30 @@
+name: rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game/index.html'
+      - 'tests/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Rule tests
+        run: node tests/rules.test.mjs
+      - name: The deployed copy matches the source
+        run: |
+          if ! diff -q game/index.html docs/index.html; then
+            echo "::error::docs/index.html is out of date — copy game/index.html over it"
+            diff game/index.html docs/index.html | head -40
+            exit 1
+          fi
+          echo "docs/index.html matches game/index.html"
