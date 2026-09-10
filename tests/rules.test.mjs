@@ -88,6 +88,7 @@ const EXPORTS = [
   'RING_N', 'FIELD_NAMES', 'JEOLGI', 'walkPath', 'nodeName',
   'state', 'PROGRESS', 'piecesAt', 'movableUnits', 'planMove', 'winnerOf',
   'pieceProgress', 'SPEECH_LINES', 'VOICE_TONE', 'LAUGHS',
+  'moveOptions', 'optionScore', 'optionEffect',
 ];
 
 const source = [
@@ -259,6 +260,39 @@ test('the move chooser prefers finishing over capturing', () => {
   setUpGame([onboard(0, 0, 'saryeo'), onboard(0, 1, 'o3'), onboard(1, 0, 'o4'), waiting(1, 1)]);
   const plan = api.planMove(0, 1, false);
   assert.equal(plan.land, 'FINISH');
+});
+
+test('a corner offers both routes as separate options', () => {
+  setUpGame([onboard(0, 0, 'o5'), waiting(0, 1), waiting(1, 0), waiting(1, 1)]);
+  const fromCorner = api.moveOptions(0, 2).filter(o => o.unit.from === 'o5');
+  assert.equal(fromCorner.length, 2, 'the shortcut and the way round');
+  assert.deepEqual(plain(fromCorner.map(o => o.land).sort()), ['mo-2', 'o7']);
+  // a piece that is not on a corner has one route
+  setUpGame([onboard(0, 0, 'o3'), waiting(0, 1), waiting(1, 0), waiting(1, 1)]);
+  assert.equal(api.moveOptions(0, 2).filter(o => o.unit.from === 'o3').length, 1);
+});
+
+test('options come back best first, and the effects are named', () => {
+  // 0:0 can capture on o5 with 걸; 0:1 would just walk on
+  setUpGame([onboard(0, 0, 'o2'), onboard(0, 1, 'o7'), onboard(1, 0, 'o5'), waiting(1, 1)]);
+  const opts = api.moveOptions(0, 3);
+  assert.ok(opts.length >= 2);
+  assert.equal(opts[0].unit.from, 'o2', 'the capture should sort first');
+  assert.ok(opts[0].score > opts[1].score);
+  assert.match(api.optionEffect(0, opts[0]), /잡기/);
+  assert.equal(api.optionEffect(0, opts[1]), '');
+});
+
+test('the score ranks finishing above capturing above joining above a step', () => {
+  setUpGame([onboard(0, 0, 'o2'), onboard(0, 1, 'o9'), onboard(1, 0, 'o5'), waiting(1, 1)]);
+  const unit = api.movableUnits(0, 3).find(u => u.from === 'o2');
+  const finish = api.optionScore(0, unit, 'FINISH');
+  const capture = api.optionScore(0, unit, 'o5');        // an opponent stands there
+  const join = api.optionScore(0, unit, 'o9');           // own piece stands there
+  const step = api.optionScore(0, unit, 'o6');
+  assert.ok(finish > capture, `finish ${finish} > capture ${capture}`);
+  assert.ok(capture > join, `capture ${capture} > join ${join}`);
+  assert.ok(join > step, `join ${join} > step ${step}`);
 });
 
 test('nobody wins until every one of a player\'s pieces is home', () => {

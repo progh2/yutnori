@@ -212,6 +212,34 @@
     font-family:"Jua",sans-serif; border:none; border-radius:999px;
     padding:8px 16px; cursor:pointer; font-size:12.5px;
   }
+  /* ---- which 말 to move ---- */
+  .move-prompt{
+    position: fixed; left:50%; bottom: 118px; transform: translateX(-50%);
+    max-width: min(94vw, 620px);
+    background: var(--glass); backdrop-filter: blur(7px);
+    border:1px solid rgba(251,241,217,.22); border-radius:16px;
+    padding: 10px 14px 12px; z-index:11;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    box-shadow: var(--shadow);
+  }
+  .move-prompt .ask{ font-family:"Jua",sans-serif; font-size:12.5px; color:var(--ink-light); }
+  .move-prompt .ask em{ font-style:normal; font-size:10.5px; color:var(--ink-muted); }
+  .move-prompt .row{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .move-option{
+    display:flex; align-items:center; gap:7px; cursor:pointer;
+    font-family:"Jua",sans-serif; font-size:12.5px;
+    background: var(--cream); color: var(--cream-ink);
+    border:2px solid transparent; border-radius:999px; padding:7px 14px 7px 8px;
+  }
+  .move-option .num{
+    width:18px; height:18px; border-radius:50%; flex:none;
+    background: rgba(58,43,26,.14); color:#3a2b1a;
+    display:flex; align-items:center; justify-content:center; font-size:10.5px;
+  }
+  .move-option.best{ border-color: var(--gold); }
+  .move-option:hover, .move-option:focus-visible{ transform: translateY(-2px); outline:none; border-color: var(--gold); }
+  .move-option .star{ font-size:11px; }
+
   .shortcut-prompt .yes{ background:var(--gold); color:var(--gold-ink); }
   .shortcut-prompt .no{ background:var(--line-dim); color:var(--cream-ink); }
 
@@ -236,6 +264,11 @@
     margin:-10px 0 0; text-align:center;
   }
   .setup-card .ask{ font-family:"Jua",sans-serif; font-size:14px; text-align:center; margin:0; }
+  /* the two setup steps are flex items, so they need to claim the full width —
+     otherwise the grid inside them shrinks to its own minimum */
+  #setup-step1, #setup-step2{
+    width:100%; display:flex; flex-direction:column; align-items:center; gap:11px;
+  }
   .choices{ display:grid; grid-template-columns: repeat(3,1fr); gap:10px; width:100%; }
   .choice{
     background: rgba(251,241,217,.08); border:2px solid rgba(251,241,217,.22);
@@ -263,6 +296,65 @@
   .seat-legend .seat{ width:11px; height:11px; border-width:2px; box-shadow:none; }
   .choice .label{ font-size:13px; }
   .choice .tag{ font-size:10px; color: var(--ink-muted); }
+
+  /* ---- narrow screens: the HUD has to leave the board visible ---- */
+  @media (max-width: 680px){
+    .hud-top{ padding: 8px 10px; gap:6px; }
+    .brand h1{ font-size: 15px; }
+    .stagebar{ display:none; }
+    .audio-toggle{ width:30px; height:30px; font-size:13px; }
+    #speed-toggle{ padding:0 9px; font-size:11px; }
+
+    .hud-center-top{ padding: 2px 6px; }
+    .player-bar{ gap:5px; padding: 5px 8px; }
+    .player-badge{ font-size:10.5px; padding:3px 8px 3px 4px; gap:5px; }
+    .player-badge .avatar{ width:18px; height:18px; font-size:10px; }
+    .hint-line{ display:none; }
+    .spectator-banner{ font-size:10.5px; padding:6px 10px; margin-top:4px; }
+
+    .turn-panel{
+      left:8px; top:44px; padding:6px 9px; min-width:0; font-size:11px; gap:3px;
+      max-width: 46vw;
+    }
+    .turn-row.now{ font-size:12px; }
+    .turn-who em{ display:none; }        /* names live on the characters' tags */
+    .stand-name{ width:20px; }
+    .stand-bar{ height:6px; }
+
+    .board-label{ font-size:10px; }
+    .board-label.key{ font-size:11.5px; }
+    .board-label em{ font-size:8.5px; }
+    .board-label.field{ font-size:13px; }
+    .char-tag{ font-size:10.5px; padding:3px 8px 4px; }
+    .speech-bubble{ font-size:11.5px; max-width:60vw; padding:6px 10px; }
+
+    .setup-card{ width:96vw; margin-bottom:5vh; padding:12px 12px 14px; border-radius:18px; gap:9px; }
+    .setup-card .title{ font-size: clamp(19px,6vw,26px); }
+    .setup-card .tagline{ font-size:11px; }
+    .setup-card .ask{ font-size:12.5px; }
+    .choices{ grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap:7px; }
+    .choice{ padding:7px 4px 6px; border-radius:12px; }
+    .seats{ height:20px; gap:5px; }
+    .seat{ width:12px; height:12px; border-width:2px; }
+
+    .hud-bottom{ padding: 8px 10px 12px; gap:7px; }
+    .throw-btn{ font-size:15px; padding:11px 26px; }
+    .action-row{ gap:9px; }
+    .reset-link{ font-size:10.5px; }
+    .move-prompt{ bottom: 104px; max-width:96vw; padding:8px 10px 10px; }
+    .move-prompt .row{ flex-direction:column; width:100%; }
+    .move-option{ width:100%; font-size:11.5px; }
+    .shortcut-prompt{ bottom: 122px; font-size:12px; max-width:92vw; }
+    .impact-text{ -webkit-text-stroke-width: 4px; }
+    footer{ font-size:9.5px; }
+  }
+  /* short and wide (a phone on its side) — keep the bottom row shallow */
+  @media (max-height: 460px){
+    .hint-line, .stagebar, footer{ display:none; }
+    .hud-bottom{ padding: 6px 10px 8px; gap:5px; }
+    .throw-btn{ font-size:14px; padding:9px 22px; }
+    .move-prompt{ bottom: 84px; }
+  }
 
   footer{
     position:fixed; left:0; right:0; bottom:2px; text-align:center;
@@ -497,7 +589,7 @@
 <div class="loading" id="loading">
   <div class="loading-card">
     <div class="spinner"></div>
-    <div>캐릭터 불러오는 중… <span id="loading-pct">0%</span></div>
+    <div><span id="loading-text">캐릭터 불러오는 중…</span> <span id="loading-pct">0%</span></div>
     <div class="loading-sub">8명의 배역 · VRoid 재배포 허용 모델 5종 (3명은 색을 갈아입습니다)</div>
   </div>
 </div>
@@ -571,6 +663,10 @@
   <!-- screen readers follow the game through this; it is never shown -->
   <p id="live-region" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
   <div class="reaction-bubble" id="reaction-bubble"></div>
+  <div class="move-prompt" id="move-prompt" hidden>
+    <span class="ask">어느 말을 움직일까요? <em>숫자키로도 고를 수 있어요</em></span>
+    <div class="row" id="move-options"></div>
+  </div>
   <div class="shortcut-prompt" id="shortcut-prompt" hidden>
     <span>🔀 꼭짓점 도착! 중앙 지름길로 갈까요?</span>
     <div class="row">
@@ -1417,14 +1513,26 @@
 
 <script>
   // ================= Main 3D scene: board, characters, sticks, camera =================
-  function initBoard3d(makeCharacter){
+  function initBoard3d(cast){
     const container = document.getElementById('board-stage3d');
     let W = window.innerWidth, H = window.innerHeight;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a2e24);
     scene.fog = new THREE.Fog(0x0a2e24, 26, 48);
-    const camera = new THREE.PerspectiveCamera(46, W/H, 0.1, 100);
+    // a phone held upright sees a narrow slice of the board, so widen the lens
+    // and stand further back the taller the window gets
+    const lensFor = aspect => (aspect < 0.9 ? 62 : 46);
+    const pullBack = aspect => (aspect < 0.9 ? Math.min(1.7, 0.95 / Math.max(0.35, aspect)) : 1);
+    const camera = new THREE.PerspectiveCamera(lensFor(W/H), W/H, 0.1, 100);
+    // standing further back on a tall screen also means the fog has to move
+    // out with the camera, or the whole board disappears into it
+    function applyFog(){
+      const k = pullBack(camera.aspect);
+      scene.fog.near = 26 * k;
+      scene.fog.far = 48 * k;
+    }
+    applyFog();
     const renderer = new THREE.WebGLRenderer({ antialias:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
     renderer.setSize(W,H);
@@ -1433,8 +1541,13 @@
 
     window.addEventListener('resize', () => {
       W = window.innerWidth; H = window.innerHeight;
-      camera.aspect = W/H; camera.updateProjectionMatrix();
+      camera.aspect = W/H;
+      camera.fov = lensFor(camera.aspect);
+      camera.updateProjectionMatrix();
+      applyFog();
       renderer.setSize(W,H);
+      if (titleMode) return;              // the title camera reframes itself
+      toOverview();
     });
 
     // three r155+ treats light intensity physically, so these are much higher
@@ -1875,9 +1988,12 @@
     // On the title screen all eight stand in two facing rows — a row of eight
     // ran off both sides of the frame, and facing pairs suit the small talk.
     function titlePos(i){
-      // one row, shoulder to shoulder — two rows put half of them behind the
-      // menu card, and eight at bench spacing ran off both sides
-      return [-4.48 + i * 1.28, RING_R + 3.0];
+      // one row, shoulder to shoulder, centred on however many have arrived —
+      // two rows put half of them behind the menu card, and eight at bench
+      // spacing ran off both sides
+      const n = Math.max(1, pieceMeshes.length);
+      const gap = n > 5 ? 1.28 : 1.6;
+      return [(i - (n - 1) / 2) * gap, RING_R + 3.0];
     }
     function toTitleLineup(){
       pieceMeshes.forEach((pm, i) => {
@@ -1891,26 +2007,37 @@
       });
       showRestCamp(0);
     }
-    for (let owner=0; owner<MAX_PLAYERS; owner++){
-      for (let idx=0; idx<2; idx++){
-        const c = makeCharacter(owner, idx);
-        const [x,z] = titlePos(seatIndex(owner, idx));
-        c.group.position.set(x,0,z);
-        // all four are different characters, so a team-coloured ring at their
-        // feet is what actually tells you whose piece is whose
-        const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(0.32, 0.042, 8, 28),
-          new THREE.MeshStandardMaterial({
-            color: PLAYER_COLORS[owner], emissive: PLAYER_COLORS[owner],
-            emissiveIntensity: 0.4, roughness: 0.4,
-          })
-        );
-        ring.rotation.x = Math.PI/2;
-        ring.position.y = 0.035;
-        c.group.add(ring);
-        scene.add(c.group);
-        pieceMeshes.push(Object.assign(c, { owner, idx, slot:'bench:'+owner+':'+idx }));
+    // Characters are added as they are needed — a two-player game never pays
+    // for the models of the players who are not in it (see ensureCast below).
+    function addPiece(i, character){
+      const owner = Math.floor(i / PIECES_PER_PLAYER), idx = i % PIECES_PER_PLAYER;
+      // every character looks different, so a team-coloured ring at their feet
+      // is what actually tells you whose piece is whose
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.32, 0.042, 8, 28),
+        new THREE.MeshStandardMaterial({
+          color: PLAYER_COLORS[owner], emissive: PLAYER_COLORS[owner],
+          emissiveIntensity: 0.4, roughness: 0.4,
+        })
+      );
+      ring.rotation.x = Math.PI/2;
+      ring.position.y = 0.035;
+      character.group.add(ring);
+      scene.add(character.group);
+      const pm = Object.assign(character, { owner, idx, slot:'bench:'+owner+':'+idx, ring });
+      pieceMeshes.push(pm);
+      addNameTag(pm);
+      if (pm.setLookAtTarget) pm.setLookAtTarget(camera);
+      return pm;
+    }
+    // load and place characters up to `count`; safe to call with a smaller count
+    async function ensureCast(count){
+      const want = Math.min(count, MAX_PLAYERS * PIECES_PER_PLAYER);
+      for (let i = pieceMeshes.length; i < want; i++){
+        addPiece(i, await cast.get(i));
       }
+      if (titleMode) toTitleLineup();
+      return pieceMeshes.length;
     }
 
     // ---- the rest camp: whoever isn't playing sits it out on a stump ----
@@ -1952,6 +2079,17 @@
         restSeats.push({ index: i, group: g });
       }
     }
+    // the pieces a player is being asked to choose between glow at the feet
+    function highlightPieces(pieces){
+      const wanted = new Set((pieces || []).map(pc => pc.owner + ':' + pc.idx));
+      pieceMeshes.forEach(pm => {
+        if (!pm.ring) return;
+        const on = wanted.has(pm.owner + ':' + pm.idx);
+        pm.ring.material.emissiveIntensity = on ? 1.6 : 0.4;
+        pm.ring.scale.setScalar(on ? 1.25 : 1);
+      });
+    }
+
     // park one character on her stump, looking back at the board
     function seatOut(pm){
       const i = seatIndex(pm.owner, pm.idx);
@@ -1966,9 +2104,13 @@
     }
     // playerCount 0 puts everyone back on their feet for the title line-up
     function showRestCamp(playerCount){
-      const resting = playerCount > 0 && playerCount < MAX_PLAYERS;
+      const first = playerCount * PIECES_PER_PLAYER;
+      const resting = playerCount > 0 && first < pieceMeshes.length;
       restCamp.visible = resting;
-      restSeats.forEach(seat => { seat.group.visible = seat.index >= playerCount * PIECES_PER_PLAYER; });
+      restSeats.forEach(seat => {
+        // a stump only appears if someone is actually sitting on it
+        seat.group.visible = resting && seat.index >= first && seat.index < pieceMeshes.length;
+      });
       if (!playerCount) pieceMeshes.forEach(pm => { pm.resting = false; });
     }
 
@@ -1995,15 +2137,16 @@
       const r = 0.42;
       return Array.from({length:n}, (_,i) => { const a=(i/n)*Math.PI*2; return [Math.cos(a)*r, Math.sin(a)*r]; });
     }
-    // ---- name tags: four different idols, so say which one is which ----
-    const nameTags = pieceMeshes.map(pm => {
+    // ---- name tags: every character looks different, so say who is who ----
+    const nameTags = [];
+    function addNameTag(pm){
       const el = document.createElement('div');
       el.className = 'char-tag';
       el.style.setProperty('--team', '#' + PLAYER_COLORS[pm.owner].toString(16).padStart(6,'0'));
       el.innerHTML = '<i></i>' + (pm.charName || '');
       labelLayer.appendChild(el);
-      return { el, piece: pm };
-    });
+      nameTags.push({ el, piece: pm });
+    }
     function updateNameTags(){
       const rect = renderer.domElement.getBoundingClientRect();
       const head = new THREE.Vector3();
@@ -2054,8 +2197,10 @@
 
     const OVERVIEW_POS = new THREE.Vector3(0, 21.5, 21.5);
     const OVERVIEW_LOOK = new THREE.Vector3(0, 0, 0.8);
+    // the whole board has to fit however the window is shaped
+    const overviewPos = () => OVERVIEW_POS.clone().multiplyScalar(pullBack(camera.aspect));
     let lookAt = OVERVIEW_LOOK.clone();
-    camera.position.copy(OVERVIEW_POS);
+    camera.position.copy(overviewPos());
     camera.lookAt(lookAt);
 
     function tweenCamera(toPos, toLook, duration){
@@ -2082,7 +2227,7 @@
       avg.divideScalar(mine.length);
       return avg;
     }
-    function toOverview(){ return tweenCamera(OVERVIEW_POS, OVERVIEW_LOOK, 850); }
+    function toOverview(){ return tweenCamera(overviewPos(), OVERVIEW_LOOK, 850); }
 
     // ---- title mode: slow orbit around the line-up while the menu is up ----
     let titleMode = true, titleAngle = 0;
@@ -2098,7 +2243,7 @@
       // they stand in a wide row, so sway across the front instead of orbiting
       // all the way round (which would end up looking down the line)
       const sway = Math.sin(titleAngle) * 0.2;
-      const dist = 8.0;
+      const dist = 8.0 * pullBack(camera.aspect);
       // aimed below their feet, which lifts the whole line-up clear of the
       // menu card in the lower half of the screen
       camera.position.set(c.x + Math.sin(sway)*dist, 1.9, c.z + Math.cos(sway)*dist);
@@ -2110,7 +2255,12 @@
     // ---- title screen: the eight of them stand around chatting ----
     // neighbours in the row pair off — [0]↔[1], [2]↔[3] … — and turn to face
     // each other. Each pair swaps speaker on its own timer.
-    const CHAT_PAIRS = [[0,1],[2,3],[4,5],[6,7]];
+    // neighbours in the row pair off; recomputed because the row grows
+    function chatPairs(){
+      const pairs = [];
+      for (let i = 0; i + 1 < pieceMeshes.length; i += 2) pairs.push([i, i+1]);
+      return pairs;
+    }
     // One line every 20 seconds for the whole line-up, not per pair — eight of
     // them on their own timers turned the menu into a racket. Turns go round
     // the shuffled cast so everyone gets a word in before anyone repeats.
@@ -2140,7 +2290,7 @@
         if (me && window.sayLine) sayLine(me, 'idle', CHAT_HOLD - 300, { onlyIfQuiet: true });
       }
       const talking = now < chat.until;
-      CHAT_PAIRS.forEach(pair => {
+      chatPairs().forEach(pair => {
         pair.forEach((mi, k) => {
           const me = pieceMeshes[mi], other = pieceMeshes[pair[1-k]];
           if (!me || !other) return;
@@ -2532,7 +2682,7 @@
     requestAnimationFrame(tick);
 
     return {
-      seatOut, showRestCamp, toTitleLineup,
+      seatOut, showRestCamp, toTitleLineup, ensureCast, highlightPieces,
       pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, focusOnFace,
       focusOnPiece, toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear,
       hideSticks, restackSlot, exitTitleMode, enterTitleMode, camera, sendHome, speak, hushAll,
@@ -2576,8 +2726,17 @@
     document.getElementById('setup-step2').hidden = true;
   }
 
-  function choosePlayers(humanCount, total){
+  async function choosePlayers(humanCount, total){
     const n = total || setupTotal || 2;
+    // pull in any characters this head-count needs before starting
+    if (board3d.ensureCast){
+      const need = n * PIECES_PER_PLAYER;
+      if (board3d.pieceMeshes.length < need){
+        if (window.showLoading) showLoading('참가자 준비 중…');
+        await board3d.ensureCast(need);
+        if (window.showLoading) showLoading(false);
+      }
+    }
     state.players = Array.from({ length: n }, (_, i) => ({
       id: i, type: i < humanCount ? 'human' : 'bot', name: 'P' + (i+1),
     }));
@@ -2590,6 +2749,8 @@
     state.gen = (state.gen || 0) + 1;   // in-flight turns from a previous game bail out
     document.getElementById('gameover').hidden = true;
     document.getElementById('gameover').classList.remove('go');
+    document.getElementById('move-prompt').hidden = true;
+    document.getElementById('shortcut-prompt').hidden = true;
     document.getElementById('throw-btn').disabled = false;
     for (let owner=0; owner<n; owner++)
       for (let idx=0; idx<PIECES_PER_PLAYER; idx++)
@@ -2918,28 +3079,66 @@
     return units;
   }
 
-  // 잡기 > 완주 > 업기 > 전진 — good enough to be sensible for both the
-  // auto-pick and the bot, without needing a piece-selection UI
+  // 완주 > 잡기 > 업기 > 전진 — the bot picks by this, and a human sees the
+  // same numbers as a ⭐ next to the recommended option
+  function optionScore(owner, unit, land){
+    if (land === 'FINISH') return 120 * unit.members.length;
+    let score = 0;
+    const foes = piecesAt(land).filter(p => p.owner !== owner);
+    const friends = piecesAt(land, owner).filter(p => unit.members.indexOf(p) === -1);
+    score += 80 * foes.length;
+    score += friends.length ? 18 : 0;
+    score += (PROGRESS[land] || 0) * 0.8;
+    if (unit.from === 'o0') score -= 4;          // launching is the fallback
+    return score;
+  }
+
+  // Every legal move for this throw. A unit sitting on a corner gets two
+  // entries — the shortcut through 방 and the way round — so choosing a piece
+  // and choosing the route are the same question.
+  function moveOptions(owner, steps){
+    const out = [];
+    for (const unit of movableUnits(owner, steps)){
+      const routes = (steps > 0 && SHORTCUT_ENTRY[unit.from]) ? [false, true] : [false];
+      for (const shortcut of routes){
+        const path = walkPath(unit.from, steps, shortcut, unit.rep.prevNodeId);
+        if (!path.length) continue;
+        const land = path[path.length - 1];
+        out.push({ unit, path, land, shortcut, score: optionScore(owner, unit, land) });
+      }
+    }
+    return out.sort((a, b) => b.score - a.score);
+  }
+
   function planMove(owner, steps, useShortcut){
     let best = null;
     for (const unit of movableUnits(owner, steps)){
       const path = walkPath(unit.from, steps, useShortcut && !!SHORTCUT_ENTRY[unit.from], unit.rep.prevNodeId);
       if (!path.length) continue;
       const land = path[path.length - 1];
-      let score = 0;
-      if (land === 'FINISH'){
-        score += 120 * unit.members.length;
-      } else {
-        const foes = piecesAt(land).filter(p => p.owner !== owner);
-        const friends = piecesAt(land, owner).filter(p => unit.members.indexOf(p) === -1);
-        score += 80 * foes.length;
-        score += friends.length ? 18 : 0;
-        score += (PROGRESS[land] || 0) * 0.8;
-        if (unit.from === 'o0') score -= 4;      // launching is the fallback
-      }
+      const score = optionScore(owner, unit, land);
       if (!best || score > best.score) best = { unit, path, land, score };
     }
     return best;
+  }
+
+  // what an option does, in words — used on the button and read aloud
+  function optionEffect(owner, opt){
+    if (opt.land === 'FINISH') return '완주!';
+    const foes = piecesAt(opt.land).filter(pc => pc.owner !== owner);
+    if (foes.length) return '잡기! (' + foes.length + '개)';
+    const friends = piecesAt(opt.land, owner).filter(pc => opt.unit.members.indexOf(pc) === -1);
+    if (friends.length) return '업기';
+    return '';
+  }
+  function optionText(owner, opt){
+    const mesh = board3d.pieceMeshes.find(pm => pm.owner === owner && pm.idx === opt.unit.rep.idx);
+    const who = (mesh && mesh.charName) || ('말 ' + (opt.unit.rep.idx + 1));
+    const from = opt.unit.rep.place === 'start' ? '대기' : nodeName(opt.unit.from);
+    const to = opt.land === 'FINISH' ? '완주' : nodeName(opt.land);
+    const extra = [opt.unit.members.length > 1 ? opt.unit.members.length + '개 업고' : '',
+                   opt.shortcut ? '지름길' : '', optionEffect(owner, opt)].filter(Boolean);
+    return who + ' · ' + from + ' → ' + to + (extra.length ? ' (' + extra.join(' · ') + ')' : '');
   }
 
   function unitLabel(members){
@@ -3010,6 +3209,8 @@
     document.getElementById('gameover').hidden = true;
     document.getElementById('gameover').classList.remove('go');
     document.getElementById('shortcut-prompt').hidden = true;
+    document.getElementById('move-prompt').hidden = true;
+    if (board3d.highlightPieces) board3d.highlightPieces([]);
     stopBGM();
     if (board3d.hushAll) board3d.hushAll();
     board3d.toTitleLineup();
@@ -3022,6 +3223,44 @@
     document.getElementById('gameover').hidden = true;
     document.getElementById('gameover').classList.remove('go');
     choosePlayers(state.players.filter(p => p.type === 'human').length, state.players.length);
+  }
+
+  // Ask which piece to move. Only for people, and only when there is a real
+  // choice — one option means there is nothing to decide.
+  function askMove(owner, options, recommended){
+    const el = document.getElementById('move-prompt');
+    const row = document.getElementById('move-options');
+    const best = options.find(o =>
+      recommended && o.unit.from === recommended.unit.from && o.land === recommended.land);
+    row.innerHTML = '';
+    board3d.highlightPieces(options.map(o => o.unit.rep));
+    return new Promise(resolve => {
+      const finish = opt => {
+        el.hidden = true;
+        board3d.highlightPieces([]);
+        window.removeEventListener('keydown', onKey, true);
+        resolve(opt);
+      };
+      options.forEach((opt, i) => {
+        const b = document.createElement('button');
+        b.className = 'move-option' + (opt === best ? ' best' : '');
+        b.innerHTML = '<span class="num">' + (i+1) + '</span>'
+          + '<span class="what">' + optionText(owner, opt) + '</span>'
+          + (opt === best ? '<span class="star">⭐</span>' : '');
+        b.onclick = () => { playClick(); finish(opt); };
+        row.appendChild(b);
+      });
+      // 1..n picks directly; tab/enter works because these are real buttons
+      function onKey(e){
+        const n = parseInt(e.key, 10);
+        if (n >= 1 && n <= options.length){ e.preventDefault(); e.stopPropagation(); playClick(); finish(options[n-1]); }
+      }
+      window.addEventListener('keydown', onKey, true);
+      el.hidden = false;
+      if (row.firstChild) row.firstChild.focus();
+      announce('어느 말을 움직일까요? '
+        + options.map((o, i) => (i+1) + '번 ' + optionText(owner, o)).join(', '));
+    });
   }
 
   function askShortcut(owner){
@@ -3111,9 +3350,16 @@
     // ---- move ----
     let captured = 0;
     let plan = planMove(owner, outcome.steps, false);
-    if (plan && outcome.steps > 0 && SHORTCUT_ENTRY[plan.unit.from]){
-      const useShortcut = await askShortcut(owner);
-      if (useShortcut) plan = planMove(owner, outcome.steps, true) || plan;
+    if (isBot){
+      // bots take the shortcut whenever it is on offer — it nearly always pays
+      if (plan && outcome.steps > 0 && SHORTCUT_ENTRY[plan.unit.from]){
+        plan = planMove(owner, outcome.steps, true) || plan;
+      }
+    } else {
+      const options = moveOptions(owner, outcome.steps);
+      if (options.length > 1) plan = await askMove(owner, options, plan) || plan;
+      else if (options.length === 1) plan = options[0];
+      if (stale()){ state.busy = false; return; }
     }
 
     if (plan){
@@ -3633,32 +3879,36 @@
     });
   }
 
-  async function loadIdols(){
-    const loader = new GLTFLoader();
-    loader.register(parser => new VRMLoaderPlugin(parser));
+  // One character at a time, and only when the game asks for it: a two-player
+  // game used to download all eight models (~32MB) before the menu appeared.
+  const vrmLoader = (() => {
+    let loader = null;
+    return () => {
+      if (!loader){
+        loader = new GLTFLoader();
+        loader.register(parser => new VRMLoaderPlugin(parser));
+      }
+      return loader;
+    };
+  })();
 
-    const cast = [];
-    let done = 0;
-    for (let i = 0; i < CAST_SIZE; i++){
-      const idol = CAST[i];
-      const gltf = await loader.loadAsync(idol.url, evt => {
-        if (evt.total) setProgress((done + evt.loaded/evt.total) / CAST_SIZE);
-      });
-      const vrm = gltf.userData.vrm;
-      if (!vrm) throw new Error('not a VRM: ' + idol.url);
-      if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
-      if (VRMUtils.combineSkeletons) VRMUtils.combineSkeletons(gltf.scene);
-      if (VRMUtils.rotateVRM0) VRMUtils.rotateVRM0(vrm);   // VRM 0.x faces -Z otherwise
-      if (idol.recolour) recolourVrm(vrm, idol.recolour);
-      vrm.scene.traverse(o => {
-        o.frustumCulled = false;
-        if (o.isMesh) o.castShadow = true;
-      });
-      cast.push(wrapVrm(vrm, idol.name, i));
-      done++;
-      setProgress(done / CAST_SIZE);
-    }
-    return cast;
+  async function loadIdol(i){
+    const idol = CAST[i];
+    shownProgress = 0;                      // the bar is per model now
+    const gltf = await vrmLoader().loadAsync(idol.url, evt => {
+      if (evt.total) setProgress(evt.loaded / evt.total);
+    });
+    const vrm = gltf.userData.vrm;
+    if (!vrm) throw new Error('not a VRM: ' + idol.url);
+    if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
+    if (VRMUtils.combineSkeletons) VRMUtils.combineSkeletons(gltf.scene);
+    if (VRMUtils.rotateVRM0) VRMUtils.rotateVRM0(vrm);   // VRM 0.x faces -Z otherwise
+    if (idol.recolour) recolourVrm(vrm, idol.recolour);
+    vrm.scene.traverse(o => {
+      o.frustumCulled = false;
+      if (o.isMesh) o.castShadow = true;
+    });
+    return wrapVrm(vrm, idol.name, i);
   }
 
   // ---- CC0 nature props (Kenney Nature Kit) for every 자리 ----
@@ -3701,21 +3951,56 @@
     window.PROP_MODELS = {};
   }
 
-  let makeCharacter;
-  try {
-    const cast = await loadIdols();
-    makeCharacter = (owner, idx) => cast[owner*2 + idx];
-    console.log('VRM idols loaded:', cast.length);
-  } catch (err) {
-    console.warn('VRM load failed — using the built-in characters instead.', err);
-    makeCharacter = (owner, idx) =>
-      buildAnimeCharacter(CHARACTER_DESIGNS[owner % CHARACTER_DESIGNS.length], (owner*2 + idx) % 2);
+  // ---- the cast, handed to the board as a lazy provider ----
+  // The first VRM decides whether models work here at all; if it fails (an
+  // Artifact blocks the fetch) every part falls back to a drawn character.
+  const cast = (() => {
+    const made = [];
+    let useVrm = null;                       // null = not decided yet
+    const drawn = i => buildAnimeCharacter(
+      CHARACTER_DESIGNS[Math.floor(i / 2) % CHARACTER_DESIGNS.length], i % 2);
+    return {
+      size: CAST_SIZE,
+      async get(i){
+        if (made[i]) return made[i];
+        if (useVrm !== false){
+          try {
+            made[i] = await loadIdol(i);
+            useVrm = true;
+            return made[i];
+          } catch (err){
+            if (useVrm === null){
+              console.warn('VRM load failed — using the built-in characters instead.', err);
+              useVrm = false;
+            } else {
+              console.warn('VRM ' + i + ' failed; drawing that one instead.', err);
+            }
+          }
+        }
+        made[i] = drawn(i);
+        return made[i];
+      },
+    };
+  })();
+
+  // how many stand on the title screen, and enough for a two-player game
+  const INITIAL_CAST = 4;
+
+  function showLoading(text){
+    if (text === false){
+      loadingEl.classList.add('done');
+      setTimeout(() => { loadingEl.hidden = true; }, 600);
+      return;
+    }
+    const label = document.getElementById('loading-text');
+    if (text && label) label.textContent = text;
+    loadingEl.hidden = false;
+    loadingEl.classList.remove('done');
   }
+  window.showLoading = showLoading;
 
-  window.board3d = initBoard3d(makeCharacter);
+  window.board3d = initBoard3d(cast);
+  await board3d.ensureCast(INITIAL_CAST);
   speakWelcome();
-  board3d.pieceMeshes.forEach(p => p.setLookAtTarget && p.setLookAtTarget(board3d.camera));
-
-  loadingEl.classList.add('done');
-  setTimeout(() => { loadingEl.hidden = true; }, 600);
+  showLoading(false);
 </script>

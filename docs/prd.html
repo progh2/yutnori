@@ -430,7 +430,7 @@
         <li>인원이 4명 미만이면 남는 캐릭터는 판 옆 휴식처의 그루터기에 앉아 구경한다</li>
       </ol>
       <h3>5.2 봇 AI 동작 방식</h3>
-      <p>당초 "랜덤 유효 선택"으로 계획했으나, 랜덤은 관전 모드에서 납득이 안 되는 수를 두어 <strong>점수 기반 휴리스틱</strong>으로 구현했다(<code>planMove</code>). 사람 플레이어의 말 선택도 같은 함수를 쓰므로 어떤 말을 옮길지 묻는 UI가 없다.</p>
+      <p>당초 "랜덤 유효 선택"으로 계획했으나, 랜덤은 관전 모드에서 납득이 안 되는 수를 두어 <strong>점수 기반 휴리스틱</strong>으로 구현했다(<code>planMove</code>).</p>
       <div class="table-wrap"><table>
         <thead><tr><th>항목</th><th>점수</th></tr></thead>
         <tbody>
@@ -441,7 +441,8 @@
           <tr><td>새 말 출발</td><td>−4 (다른 선택이 없을 때의 차선)</td></tr>
         </tbody>
       </table></div>
-      <p>즉 <strong>완주 &gt; 잡기 &gt; 업기 &gt; 전진</strong> 순으로 고른다. 지름길 진입은 사람에게만 묻고, 봇은 거의 항상 이득이므로 자동으로 탄다. 봇의 턴에는 "🤖 (이름) 생각 중…"을 짧게 띄우고, 전원 봇 모드에서도 사람이 볼 때와 똑같은 연출(카메라·표정·대사)을 적용한다.</p>
+      <p>즉 <strong>완주 &gt; 잡기 &gt; 업기 &gt; 전진</strong> 순으로 고른다. 봇의 턴에는 "🤖 (이름) 생각 중…"을 짧게 띄우고, 전원 봇 모드에서도 사람이 볼 때와 똑같은 연출(카메라·표정·대사)을 적용한다.</p>
+      <p><strong>사람은 직접 고른다</strong>(<code>moveOptions</code> / <code>askMove</code>). 움직일 수 있는 선택지가 둘 이상이면 목록으로 띄우고, 각 항목에 "누가 · 어디 → 어디"와 결과(잡기 / 완주 / 업기 / 지름길)를 적어 보여준다. 같은 점수 함수로 계산한 추천 항목에는 ⭐를 붙이고, 숫자키로도 고를 수 있으며 후보 캐릭터는 발밑 링이 밝아진다. 꼭짓점에 선 말은 <strong>지름길과 일반 경로가 각각 하나의 선택지</strong>로 나오므로 "어느 말을"과 "어느 길로"를 한 번에 정한다 — 별도의 지름길 질문은 봇에게만 남는다.</p>
 
       <h3 id="s5-3">5.3 배역과 인격</h3>
       <p>말은 최대 8개(4인 × 2개)이고 <strong>모두 서로 다른 캐릭터</strong>가 맡는다. 어느 팀인지는 발밑 팀 색상 링과 머리 위 이름표로 구분한다. 캐릭터마다 대기 자세·인사·생각·환호·낙담 포즈, 대사 풀(잡담·결과별 감정·잡기·잡힘·완주·업기·승패), 목소리 피치/속도, 웃음소리가 따로 있다.</p>
@@ -474,6 +475,8 @@
         <li>목소리: 브라우저 음성합성(Web Speech API). 대사를 큐에 넣어 한 번에 하나만 읽는다 (10.4)</li>
         <li>HUD: 3D 화면 위에 떠 있는 HTML 오버레이 (자리 이름·절기, 캐릭터 이름표, 말풍선, 결과 이펙트, 현재/다음 턴 패널) — 3D 좌표를 카메라로 투영해 위치를 잡는다</li>
         <li>상태 관리: 순수 JS 객체 (프레임워크 없이 vanilla JS). 진행 중인 턴은 세대(generation) 값으로 취소한다</li>
+        <li>캐릭터 모델은 필요한 시점에 하나씩 불러온다 — 부팅 시 4명(타이틀 화면 + 2인 게임), 3·4인을 고르면 그때 부족한 만큼 추가</li>
+        <li>규칙 로직은 <code>tests/rules.test.mjs</code>가 단일 HTML에서 스크립트 블록을 뽑아 <code>node:vm</code>에서 검증한다 (GitHub Actions에서 push마다 실행, 배포본이 소스와 어긋나면 실패)</li>
       </ul>
 
       <h3 id="s6-2">6.2 클래스 다이어그램</h3>
@@ -621,7 +624,9 @@ sequenceDiagram
         <li>캐릭터는 자리 표식 옆에 서고 소품은 반대쪽으로 배치해 겹치지 않게 한다</li>
         <li>업힌 말은 나란히 서서 안쪽 손을 잡고 함께 흔든다 (같은 칸에 서는 건 항상 같은 편)</li>
         <li>머리 위 이름표(팀 색상 테두리), 말풍선, 감정 이모지가 캐릭터를 따라다닌다</li>
-        <li>왼쪽 상단에 <strong>현재 턴 / 다음 턴</strong>과 남은 추가 턴 수를 표시</li>
+        <li>왼쪽 상단에 <strong>현재 턴 / 다음 턴</strong>, 남은 추가 턴 수, 플레이어별 진행 상황(말 하나당 막대 + 완주 수)을 표시</li>
+        <li>좁은 화면에서는 HUD를 줄이고 렌즈를 넓혀(세로 화면 62°) 판 전체가 들어오게 한다 — 카메라가 물러나는 만큼 안개도 함께 밀어낸다</li>
+        <li>키보드만으로 플레이 가능: 스페이스/엔터로 던지기, 숫자키로 말 선택, y/n으로 지름길. 결과·차례·승패는 <code>aria-live</code>로 읽어주고, <code>prefers-reduced-motion</code>이면 카메라 연출을 생략한다</li>
         <li>우클릭 드래그(터치는 한 손가락)로 시점 회전, 휠/핀치로 확대·축소, 연출 속도 토글(1x / 2x)</li>
       </ul>
       <h3 id="s7-4">7.4 소리와 목소리</h3>
@@ -647,7 +652,7 @@ sequenceDiagram
         <div class="stage"><span class="idx">7</span><span class="name">잡기 & 추가 턴</span><span class="detail"><b>산출물</b> 상대 말 리셋 + 추가 턴 큐 처리 · <b>완료 기준</b> 잡기 시 상대 말이 정확히 복귀, 추가 턴 누적 동작 확인</span></div>
         <div class="stage"><span class="idx">8</span><span class="name">봇 AI & 시각화</span><span class="detail"><b>산출물</b> 점수 기반 휴리스틱 + 선택 과정 시각화 · <b>완료 기준</b> 전원 봇 모드에서 관전만으로 게임이 끝까지 자동 진행됨</span></div>
         <div class="stage"><span class="idx">9</span><span class="name">승리 조건 & 통합 테스트</span><span class="detail"><b>산출물</b> 전체 게임 통합, 승리 처리 및 재시작 UI · <b>완료 기준</b> 2개 말 완주 시 즉시 승리 화면, 처음부터 끝까지 버그 없이 1판 플레이 가능</span></div>
-        <div class="stage"><span class="idx">10</span><span class="name">연출·고증·에셋 개선</span><span class="detail"><b>산출물</b> 29밭 고증, 24절기 지형, VRM 캐릭터 8인, CC0 음원, TTS, 2~4인 플레이 · <b>완료 기준</b> 요청 하나당 이슈 하나로 추적하고, 닫힐 때마다 Pages·Artifact에 배포 (<a href="https://github.com/progh2/yutnori/milestone/10">Milestone 10</a>)</span></div>
+        <div class="stage"><span class="idx">10</span><span class="name">연출·고증·에셋 개선</span><span class="detail"><b>산출물</b> 29밭 고증, 24절기 지형, VRM 캐릭터 8인, CC0 음원, TTS, 2~4인 플레이, 말 선택 UI, 진행 표시, 접근성, 모바일, 규칙 테스트 · <b>완료 기준</b> 요청 하나당 이슈 하나로 추적하고, 닫힐 때마다 Pages·Artifact에 배포 (<a href="https://github.com/progh2/yutnori/milestone/10">Milestone 10</a>)</span></div>
       </div>
     </section>
 
@@ -663,6 +668,10 @@ sequenceDiagram
         <li><input type="checkbox" disabled checked> 캐릭터 8인이 각자 다른 외형·포즈·대사·목소리를 가짐</li>
         <li><input type="checkbox" disabled checked> 참가하지 않는 캐릭터는 휴식처에서 앉아 대기</li>
         <li><input type="checkbox" disabled checked> 소리·목소리는 CC0 음원과 브라우저 음성합성으로 처리하며 라이선스 출처를 문서화</li>
+        <li><input type="checkbox" disabled checked> 사람은 움직일 말과 경로를 직접 고를 수 있고, 판의 진행 상황을 화면에서 읽을 수 있다</li>
+        <li><input type="checkbox" disabled checked> 키보드만으로 플레이 가능하고, 결과·차례가 스크린 리더로 읽히며, 모션 감소 설정을 존중</li>
+        <li><input type="checkbox" disabled checked> 좁은 화면(세로 모바일)에서도 판 전체와 HUD가 겹치지 않고 보인다</li>
+        <li><input type="checkbox" disabled checked> 규칙 로직에 자동 테스트가 있고 push마다 CI에서 실행된다</li>
         <li><input type="checkbox" disabled checked> 멘토가 이 문서만으로 게임 규칙과 아키텍처를 이해할 수 있음</li>
       </ul>
     </section>
@@ -674,7 +683,8 @@ sequenceDiagram
         <li><s>three.js 3D 애니메이션과 2D 말판 UI 간 전환 연출</s> → 말판까지 3D로 통일해 전환 자체가 없어짐 (10.2)</li>
         <li><s>봇 전략은 1차로 랜덤 선택만</s> → 점수 기반 휴리스틱으로 구현 (5.2)</li>
         <li>남은 것: 배역 8자리에 원본 모델은 5종뿐이어서 3자리는 색조 변경으로 채운다 (10.2.1). 추가 모델을 확보하면 <code>IDOL_ROSTER</code>에 한 줄 추가로 대체된다</li>
-        <li>남은 것: 2인 게임에도 8명 모델을 모두 불러와 첫 진입이 느리다 — 인원 확정 후 필요한 만큼만 불러오는 방식이 필요</li>
+        <li><s>2인 게임에도 8명 모델을 모두 불러와 첫 진입이 느리다</s> → 필요한 만큼만 불러오도록 바꿨다 (6.1)</li>
+        <li>남은 것: 포즈 라이브러리(.vrma) — VRoid 공식 무료 7종은 <strong>"꺼낼 수 있는 상태로 2차 배포" 금지</strong>라서 저장소에 담을 수 없다. CC0인 Quaternius Universal Animation Library를 VRM 휴머노이드로 리타게팅하는 쪽이 현실적이다 (<a href="https://github.com/progh2/yutnori/issues/25">#25</a>)</li>
       </ul>
       <h3>10.1 설계 결정 근거</h3>
       <ul>
