@@ -88,6 +88,28 @@
   }
   .player-badge.p0 .avatar{ background: var(--gold); }
   .player-badge.p1 .avatar{ background: var(--p2); }
+  .player-badge.p2 .avatar{ background: #4fb3d9; }
+  .player-badge.p3 .avatar{ background: #74d17a; }
+  .player-bar{ flex-wrap:wrap; justify-content:center; }
+
+  /* ---- whose turn it is (top-left, under the title) ---- */
+  .turn-panel{
+    position:fixed; left:14px; top:56px; z-index:5;
+    background: rgba(10,40,32,.5); backdrop-filter: blur(7px);
+    border:1px solid rgba(251,241,217,.18); border-radius:14px;
+    padding:8px 12px; font-family:"Jua",sans-serif; font-size:12px;
+    color: var(--ink-light); pointer-events:none;
+    display:flex; flex-direction:column; gap:5px; min-width:150px;
+  }
+  .turn-row{ display:flex; align-items:center; gap:7px; }
+  .turn-label{ font-size:10.5px; color: var(--ink-muted); width:24px; flex:none; }
+  .turn-dot{ width:9px; height:9px; border-radius:50%; flex:none; background: var(--cream); }
+  .turn-dot.p0{ background:#f2b134; } .turn-dot.p1{ background:#d94f8c; }
+  .turn-dot.p2{ background:#4fb3d9; } .turn-dot.p3{ background:#74d17a; }
+  .turn-who em{ font-style:normal; color: var(--ink-muted); font-size:10.5px; margin-left:5px; }
+  .turn-row.now{ font-size:13.5px; color:#ffe6a8; }
+  .turn-row.next{ opacity:.72; }
+  .turn-extra{ font-size:10.5px; color:#ffd98a; }
   .player-badge.active{ border-color: var(--gold); background: rgba(242,177,52,.18); box-shadow: 0 0 0 2px rgba(242,177,52,.3) inset; }
   .vs-divider{ font-family:"Jua",sans-serif; color: var(--ink-muted); font-size:12px; }
 
@@ -445,17 +467,24 @@
     <div class="setup-card">
       <div class="title">✨ 별밭 윷놀이</div>
       <p class="tagline">북극성과 28수의 밭에서, 오늘도 한 바퀴</p>
-      <p class="ask">참가자 2명 중 <strong>사람은 몇 명</strong>인가요?</p>
-      <div class="choices">
-        <button class="choice" onclick="playClick(); choosePlayers(0)">
-          <span class="vs">🤖 vs 🤖</span><span class="label">0명</span><span class="tag">봇끼리 관전</span>
-        </button>
-        <button class="choice" onclick="playClick(); choosePlayers(1)">
-          <span class="vs">🧑 vs 🤖</span><span class="label">1명</span><span class="tag">혼자 도전</span>
-        </button>
-        <button class="choice" onclick="playClick(); choosePlayers(2)">
-          <span class="vs">🧑 vs 🧑</span><span class="label">2명</span><span class="tag">같이 플레이</span>
-        </button>
+      <div id="setup-step1">
+        <p class="ask">몇 명이 <strong>같이</strong> 하나요?</p>
+        <div class="choices">
+          <button class="choice" onclick="playClick(); chooseTotal(2)">
+            <span class="vs">👥</span><span class="label">2명</span><span class="tag">한 판 승부</span>
+          </button>
+          <button class="choice" onclick="playClick(); chooseTotal(3)">
+            <span class="vs">👥👤</span><span class="label">3명</span><span class="tag">삼자 대결</span>
+          </button>
+          <button class="choice" onclick="playClick(); chooseTotal(4)">
+            <span class="vs">👥👥</span><span class="label">4명</span><span class="tag">넷이서</span>
+          </button>
+        </div>
+      </div>
+      <div id="setup-step2" hidden>
+        <p class="ask">참가자 <strong id="setup-total-label">2명</strong> 중 <strong>사람은 몇 명</strong>인가요?</p>
+        <div class="choices" id="human-choices"></div>
+        <button class="reset-link" onclick="playClick(); backToStep1()">← 인원 다시 고르기</button>
       </div>
     </div>
   </div>
@@ -475,6 +504,7 @@
     <div class="hud-center-top">
       <div class="panel player-bar" id="player-bar"></div>
     </div>
+    <div class="turn-panel" id="turn-panel" hidden></div>
     <p class="hint-line">우클릭 드래그(터치는 한 손가락)로 시점 회전 · 휠/핀치로 확대·축소</p>
     <div class="spectator-banner" id="spectator-banner" hidden>
       👀 관전 모드 — 봇 둘이 알아서 던지고 움직입니다. 편하게 지켜보세요.
@@ -586,6 +616,10 @@
   // 참먹이, which is what makes the 11-step route possible.
   const RING_R = 8.0;
   const RING_N = 20;
+  const MAX_PLAYERS = 4;        // two pieces each
+  const PIECES_PER_PLAYER = 2;
+  const SEAT_SCALE = 1.75;      // stump scaled so its top lands at hip height
+  const SEAT_HEIGHT = 0.36;
 
   function ringPos(i){
     const a = (i / RING_N) * Math.PI * 2;
@@ -848,10 +882,17 @@
       voice.ko = ko[0] || null;
       // hand each idol her own voice when the system has several Korean ones,
       // otherwise they're separated by pitch and rate alone
-      voice.perPersona = [0,1,2,3].map(i => ko.length ? ko[i % ko.length] : null);
+      voice.perPersona = Array.from({length:8}, (_, i) => ko.length ? ko[i % ko.length] : null);
     };
     pick();
     speechSynthesis.addEventListener('voiceschanged', pick);
+    // Chrome fills the voice list asynchronously and sometimes without firing
+    // voiceschanged, so poll briefly at startup
+    let tries = 0;
+    const poll = setInterval(() => {
+      pick();
+      if (voice.ko || ++tries > 20) clearInterval(poll);
+    }, 300);
   }
   const VOICE_TONE = [
     { pitch:1.0,  rate:0.95 },   // 시노 — 차분
@@ -869,37 +910,55 @@
   let speaking = null, speechTimer = 0;
   const MAX_QUEUE = 3;
 
+  function speechBusy(){ return !!speaking || speechQueue.length > 0; }
   function pumpSpeech(){
     if (speaking || !speechQueue.length) return;
     const item = speechQueue.shift();
     speaking = item;
+    let started = false, tries = 0;
     const done = () => {
       if (speaking !== item) return;
       speaking = null;
       clearTimeout(speechTimer);
+      clearTimeout(item.retry);
       setTimeout(pumpSpeech, 90);          // a beat of silence between lines
     };
-    try {
+    const attempt = () => {
+      tries++;
       const u = new SpeechSynthesisUtterance(item.text);
+      // an English voice reading Korean text comes out silent on some engines,
+      // so only ever hand it a Korean one
       if (item.voice) u.voice = item.voice;
       u.lang = 'ko-KR';
       u.pitch = item.pitch; u.rate = item.rate; u.volume = 0.95;
-      u.onstart = () => { if (item.onstart) item.onstart(); };
+      u.onstart = () => { started = true; if (item.onstart) item.onstart(); };
       u.onend = done;
       u.onerror = done;
-      // some browsers never fire onend; don't let the queue wedge
-      speechTimer = setTimeout(done, 1600 + item.text.length * 190);
-      speechSynthesis.speak(u);
-    } catch (e) { done(); }
+      try {
+        // the engine can be left paused by a previous cancel, which silently
+        // swallows everything queued afterwards
+        speechSynthesis.resume();
+        speechSynthesis.speak(u);
+      } catch (e) { done(); return; }
+      // if it never starts, try once more from scratch before giving up
+      item.retry = setTimeout(() => {
+        if (speaking !== item || started) return;
+        if (tries < 2){ try { speechSynthesis.cancel(); } catch (e) {} attempt(); }
+        else done();
+      }, 700);
+    };
+    // some browsers never fire onend; don't let the queue wedge
+    speechTimer = setTimeout(done, 2200 + item.text.length * 190);
+    attempt();
   }
 
   function sayAloud(text, personaIndex, opts){
     if (!voice.enabled || !audio.enabled) return;
     if (!('speechSynthesis' in window)) return;
-    const tone = VOICE_TONE[personaIndex || 0] || VOICE_TONE[0];
+    const tone = VOICE_TONE[(personaIndex || 0) % VOICE_TONE.length];
     speechQueue.push({
       text, onstart: opts && opts.onstart,
-      voice: voice.perPersona[personaIndex || 0] || voice.ko,
+      voice: voice.perPersona[(personaIndex || 0) % voice.perPersona.length] || voice.ko,
       pitch: tone.pitch, rate: tone.rate,
     });
     while (speechQueue.length > MAX_QUEUE) speechQueue.shift();
@@ -912,6 +971,7 @@
     try { speechSynthesis.cancel(); } catch (e) {}
   }
   // spoken once, the first time the page is allowed to make a sound
+  window.speechBusy = speechBusy;
   const WELCOME_LINE = '별밭 윷놀이에 오신 것을 환영합니다.';
   let welcomeDone = false;
   function speakWelcome(){
@@ -922,7 +982,7 @@
   // boot and again on the first click or key press
   ['pointerdown','keydown','touchstart'].forEach(ev =>
     window.addEventListener(ev, () => setTimeout(speakWelcome, 50), { passive:true }));
-  function laughAloud(personaIndex){ sayAloud(LAUGHS[personaIndex || 0] || LAUGHS[1], personaIndex); }
+  function laughAloud(personaIndex){ sayAloud(LAUGHS[(personaIndex || 0) % LAUGHS.length], personaIndex); }
   function toggleVoice(){
     voice.enabled = !voice.enabled;
     if (!voice.enabled) clearSpeech();
@@ -1220,6 +1280,8 @@
       holdL: { shoulderL:[0,0,1.15], elbowL:[-0.05,0,0] },
       greet: { shoulderR:[0,0,-2.2], elbowR:[-0.4,0,0] },
       think: { shoulderR:[-1.1,0,-0.5], elbowR:[-1.4,0,0], head:[0.14,0,0] },
+      sit:   { hipL:[-1.3,0,0], hipR:[-1.3,0,0], kneeL:[1.25,0,0], kneeR:[1.25,0,0],
+               shoulderL:[0.5,0,0.2], shoulderR:[0.5,0,-0.2], elbowL:[-0.5,0,0], elbowR:[-0.5,0,0] },
     };
 
     const api = {
@@ -1236,6 +1298,7 @@
 
       setPose(name){
         this.poseTarget = Object.assign({}, IDLE, POSES[name] || {});
+        this.sitLift = name === 'sit' ? -0.38 : 0;
       },
       faceTowards(dx, dz){
         if (Math.abs(dx) < 1e-4 && Math.abs(dz) < 1e-4) return;
@@ -1284,7 +1347,7 @@
           joints.torso.rotation.z = Math.sin(p) * 0.04;
           bob.position.y = 0.026 * (1 + Math.cos(2*p));
         } else {
-          bob.position.y = Math.sin(now / 620) * 0.022;
+          bob.position.y = (this.sitLift || 0) + Math.sin(now / 620) * 0.022;
         }
         // turn toward facing direction on the shortest arc
         let d = this.facing - group.rotation.y;
@@ -1339,7 +1402,12 @@
     // ---- the four 밭, laid out as seasons (docs/yutpan.md) ----
     // 29밭 minus 방 and the four corners leaves 24 — read as the 24 절기, so
     // each quadrant gets a season's ground.
-    const FIELD_COLORS = [0x35743d, 0x1d5b33, 0x6d5722, 0x4b5f6b];  // 봄 여름 가을 겨울
+    // 봄 새싹빛 · 여름 짙은 초록 · 가을 익은 황금 · 겨울 시린 회청
+    const FIELD_COLORS = [0x4c8b3a, 0x1c6535, 0x8a6a22, 0x7f96a5];
+    // the same four seasons tint the 밭 markers and the scenery on them
+    const FIELD_DISC = [0xdcefc0, 0xd3e8bb, 0xf0dda6, 0xe4eff6];
+    const FIELD_TINT = [0xa8d98a, 0x2f7a3f, 0xd9a441, 0xdfeaf2];
+    const FIELD_TINT_MIX = [0.14, 0.16, 0.22, 0.30];
     const fieldLabelAnchors = [];
     for (let f = 0; f < 4; f++){
       const a0 = ((f*5 + 0.5) / RING_N) * Math.PI*2;
@@ -1399,6 +1467,31 @@
       const lib = window.PROP_MODELS || {};
       return lib[name] ? lib[name].clone(true) : null;
     }
+    // wash a prop toward its season, so a winter 밭 reads as winter even when
+    // the model itself is a plain grey stone
+    const tintCache = new Map();
+    function tintProp(obj, field){
+      if (field === undefined || field < 0) return obj;
+      const tint = new THREE.Color(FIELD_TINT[field]);
+      const mix = FIELD_TINT_MIX[field];
+      obj.traverse(o => {
+        if (!o.isMesh || !o.material) return;
+        const wasArray = Array.isArray(o.material);
+        const mats = wasArray ? o.material : [o.material];
+        const mapped = mats.map(m => {
+          const key = (m.uuid || '') + ':' + field;
+          let out = tintCache.get(key);
+          if (!out){
+            out = m.clone();
+            if (out.color) out.color.lerp(tint, mix);
+            tintCache.set(key, out);
+          }
+          return out;
+        });
+        o.material = wasArray ? mapped : mapped[0];
+      });
+      return obj;
+    }
     // A 자리's scenery is its 절기 — 입춘 puts out shoots, 동지 lights a fire.
     // The four corners and 방 keep their monuments, since those are the turns
     // of the season and the pole star rather than 절기.
@@ -1427,7 +1520,8 @@
     // the marker every 자리 gets, so the standing spot stays unambiguous
     function baseDisc(node, mat){
       const isStart = node.kind === 'gate', isCorner = node.kind === 'corner';
-      const color = isStart ? 0xb8342a : (isCorner ? 0xc98d20 : (node.kind === 'arm' ? 0xb5a67e : 0xcabf9f));
+      const seasonal = node.field >= 0 ? FIELD_DISC[node.field] : 0xcabf9f;
+      const color = isStart ? 0xb8342a : (isCorner ? 0xc98d20 : seasonal);
       const r = isStart ? 0.5 : (isCorner ? 0.45 : 0.38);
       const disc = new THREE.Mesh(new THREE.CylinderGeometry(r, r*0.9, 0.07, isCorner ? 16 : 12), mat(color, 0.8));
       disc.position.y = 0.035;
@@ -1457,7 +1551,7 @@
         g.add(pip);
       }
 
-      const prop = propForNode(id, node);
+      const prop = tintProp(propForNode(id, node), node.field);
       if (prop){
         const base = prop.userData.jeolgiScale || PROP_SCALE[node.animal] || 1.6;
         const sc = base * (0.92 + rand()*0.16);
@@ -1489,7 +1583,7 @@
       const outAngle = Math.atan2(outZ, outX);
       const n = 2 + Math.floor(rand()*3);
       for (let i = 0; i < n; i++){
-        const deco = propClone(set[Math.floor(rand()*set.length)]);
+        const deco = tintProp(propClone(set[Math.floor(rand()*set.length)]), node.field);
         if (!deco) continue;
         const a = outAngle + (rand() - 0.5) * 2.0;      // ±57° of "away from her"
         const r = 1.05 + rand()*0.65;
@@ -1716,12 +1810,15 @@
     }
 
     // ---- characters / pieces ----
-    const PLAYER_COLORS = [0xf2b134, 0xd94f8c];
+    const PLAYER_COLORS = [0xf2b134, 0xd94f8c, 0x4fb3d9, 0x74d17a];
     const pieceMeshes = [];
     // they wait in a row just outside 참먹이, and retire to the far side
-    function benchPos(owner, idx){ return [-4.5 + (owner*2 + idx)*3.0, RING_R + 2.8]; }
-    function finishPos(owner, idx){ return [-4.5 + (owner*2 + idx)*3.0, -(RING_R + 3.0)]; }
-    for (let owner=0; owner<2; owner++){
+    function seatIndex(owner, idx){ return owner*2 + idx; }
+    function benchPos(owner, idx){ return [-6.3 + seatIndex(owner, idx)*1.8, RING_R + 2.9]; }
+    function finishPos(owner, idx){ return [-6.3 + seatIndex(owner, idx)*1.8, -(RING_R + 3.1)]; }
+    // characters sitting out a game rest in a camp off to the side, facing in
+    function restPos(i){ return [RING_R + 3.7, -4.2 + (i % 4) * 2.3]; }
+    for (let owner=0; owner<MAX_PLAYERS; owner++){
       for (let idx=0; idx<2; idx++){
         const c = makeCharacter(owner, idx);
         const [x,z] = benchPos(owner, idx);
@@ -1741,6 +1838,65 @@
         scene.add(c.group);
         pieceMeshes.push(Object.assign(c, { owner, idx, slot:'bench:'+owner+':'+idx }));
       }
+    }
+
+    // ---- the rest camp: whoever isn't playing sits it out on a stump ----
+    // Kenney's Nature Kit has no chairs, but it does have stumps, which suit a
+    // board made of fields better than furniture would.
+    const restCamp = new THREE.Group();
+    const restSeats = [];
+    restCamp.visible = false;
+    scene.add(restCamp);
+    {
+      const tent = propClone('tent_smallOpen');
+      if (tent){
+        tent.scale.setScalar(2.2);
+        tent.position.set(RING_R + 6.4, 0, -1.0);
+        tent.rotation.y = -Math.PI/2;
+        restCamp.add(tent);
+      }
+      const fire = propClone('campfire_logs');
+      if (fire){
+        fire.scale.setScalar(2.0);
+        fire.position.set(RING_R + 5.6, 0, 3.4);
+        restCamp.add(fire);
+      }
+      for (let i = PIECES_PER_PLAYER * 2; i < MAX_PLAYERS * PIECES_PER_PLAYER; i++){
+        const [sx, sz] = restPos(i);
+        const stool = propClone('stump_squareDetailedWide') || propClone('stump_round');
+        const g = new THREE.Group();
+        g.position.set(sx, 0, sz);
+        if (stool){
+          stool.scale.setScalar(SEAT_SCALE);
+          g.add(stool);
+        } else {
+          const drawn = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.33, SEAT_HEIGHT, 14),
+            new THREE.MeshStandardMaterial({ color:0x7b5a3a, roughness:0.9 }));
+          drawn.position.y = SEAT_HEIGHT/2;
+          g.add(drawn);
+        }
+        restCamp.add(g);
+        restSeats.push({ index: i, group: g });
+      }
+    }
+    // park one character on her stump, looking back at the board
+    function seatOut(pm){
+      const i = seatIndex(pm.owner, pm.idx);
+      const [sx, sz] = restPos(i);
+      pm.slot = 'rest:' + pm.owner + ':' + pm.idx;
+      pm.resting = true;
+      pm.walking = false;
+      pm.group.position.set(sx, 0, sz);
+      pm.setPose('sit');
+      pm.setExpression('happy');
+      pm.faceTowards(-1, -0.15);          // back toward the board
+    }
+    // playerCount 0 puts everyone back on their feet for the title line-up
+    function showRestCamp(playerCount){
+      const resting = playerCount > 0 && playerCount < MAX_PLAYERS;
+      restCamp.visible = resting;
+      restSeats.forEach(seat => { seat.group.visible = seat.index >= playerCount * PIECES_PER_PLAYER; });
+      if (!playerCount) pieceMeshes.forEach(pm => { pm.resting = false; });
     }
 
     // Characters stand just off the marker: ring 자리 shift inward toward 방,
@@ -1868,14 +2024,15 @@
     // ---- title screen: the four of them stand around chatting ----
     // bench layout puts them in two facing columns, so [0]↔[2] and [1]↔[3]
     // are the natural pairs. Each pair swaps speaker on its own random timer.
-    const CHAT_PAIRS = [[0,2],[1,3]];
-    const chat = CHAT_PAIRS.map((_, i) => ({ timer: 0.6 + i*0.9, speaker: i % 2 }));
+    const CHAT_PAIRS = [[0,1],[2,3],[4,5],[6,7]];
+    // spaced well apart: eight of them talking over each other was a racket
+    const chat = CHAT_PAIRS.map((_, i) => ({ timer: 1.0 + i*2.6, speaker: i % 2 }));
     function updateTitleChatter(now, dt){
       CHAT_PAIRS.forEach((pair, pi) => {
         const st = chat[pi];
         st.timer -= dt;
         if (st.timer <= 0){
-          st.timer = 3.4 + Math.random()*2.8;
+          st.timer = 7.5 + Math.random()*5.5;
           st.speaker = Math.random() < 0.45 ? st.speaker : 1 - st.speaker;
         }
         pair.forEach((mi, k) => {
@@ -1886,13 +2043,15 @@
           const speaking = k === st.speaker;
           // a gesture now and then while talking; a nod while listening
           const beat = Math.sin(now/620 + mi*2);
-          me.setPose(speaking ? (beat > 0.75 ? 'cheer' : (beat < -0.8 ? 'greet' : 'idle'))
-                              : (beat > 0.85 ? 'greet' : 'idle'));
+          // a small wave is gesture enough here; the big celebration poses
+          // looked like a row of scarecrows at the title
+          me.setPose(speaking && beat > 0.6 ? 'greet' : 'idle');
           me.setExpression(speaking ? 'neutral' : 'happy');
           if (me.setTalking) me.setTalking(speaking, now + mi*300);
           if (speaking && st.spokeFor !== st.timer){
             st.spokeFor = st.timer;
-            if (window.sayLine) sayLine(me, 'idle', 4200);
+            // read aloud only when no one else is mid-sentence
+            if (window.sayLine) sayLine(me, 'idle', 6200, { onlyIfQuiet: true });
           }
           if ('headExtra' in me){
             me.headExtra = speaking ? Math.sin(now/420 + mi)*0.05
@@ -1909,6 +2068,7 @@
       if (!titleMode) return Promise.resolve();
       titleMode = false;
       pieceMeshes.forEach(p => {
+        if (p.resting) return;          // she's on her stump, leave her there
         p.setPose('idle');
         p.setExpression('neutral');
         if (p.setTalking) p.setTalking(false, 0);
@@ -2180,7 +2340,7 @@
     const nextChat = {};
     function applyGroupBehaviour(now){
       const bySlot = {};
-      pieceMeshes.forEach(p => { if (!/^(bench|finish):/.test(p.slot)) (bySlot[p.slot] = bySlot[p.slot]||[]).push(p); });
+      pieceMeshes.forEach(p => { if (!/^(bench|finish|rest):/.test(p.slot)) (bySlot[p.slot] = bySlot[p.slot]||[]).push(p); });
       // forget slots that no longer hold a pair
       [greeted, bonked].forEach(set => set.forEach(slot => {
         if ((bySlot[slot] || []).length < 2){ set.delete(slot); delete nextChat[slot]; }
@@ -2250,7 +2410,8 @@
       if (starSpin){ starSpin.rotation.y += dt*0.8; starSpin.position.y = 0.42 + Math.sin(now/700)*0.04; }
       // idols always turn to face whoever is watching, unless they're walking
       pieceMeshes.forEach(p => {
-        if (!p.walking) p.faceTowards(camera.position.x - p.group.position.x, camera.position.z - p.group.position.z);
+        if (!p.walking && !p.resting)
+          p.faceTowards(camera.position.x - p.group.position.x, camera.position.z - p.group.position.z);
       });
       if (!titleMode) applyGroupBehaviour(now);
       pieceMeshes.forEach(p => p.tickAnim(now, dt));
@@ -2268,6 +2429,7 @@
     requestAnimationFrame(tick);
 
     return {
+      seatOut, showRestCamp,
       pieceMeshes, benchPos, finishPos, focusOnPlayer, focusOnPoint, focusOnFace,
       focusOnPiece, toOverview, screenPosFor, movePiece, focusPoint, throwSticksNear,
       hideSticks, restackSlot, exitTitleMode, enterTitleMode, camera, sendHome, speak, hushAll,
@@ -2284,9 +2446,35 @@
     document.getElementById('screen-game').hidden = name !== 'game';
   }
 
-  function choosePlayers(humanCount){
-    const types = humanCount===2 ? ['human','human'] : humanCount===1 ? ['human','bot'] : ['bot','bot'];
-    state.players = types.map((type,i) => ({ id:i, type, name:'P'+(i+1) }));
+  // two-step setup: how many are playing, then how many of them are people
+  let setupTotal = 2;
+  function chooseTotal(n){
+    setupTotal = n;
+    document.getElementById('setup-step1').hidden = true;
+    document.getElementById('setup-step2').hidden = false;
+    document.getElementById('setup-total-label').textContent = n + '명';
+    const box = document.getElementById('human-choices');
+    box.innerHTML = '';
+    for (let h = 0; h <= n; h++){
+      const b = document.createElement('button');
+      b.className = 'choice';
+      b.innerHTML = '<span class="vs">' + ('🧑'.repeat(h) || '🤖') + '</span>'
+        + '<span class="label">' + h + '명</span>'
+        + '<span class="tag">' + (h === 0 ? '봇끼리 관전' : h === n ? '전원 사람' : '사람 ' + h + ' · 봇 ' + (n-h)) + '</span>';
+      b.onclick = () => { playClick(); choosePlayers(h); };
+      box.appendChild(b);
+    }
+  }
+  function backToStep1(){
+    document.getElementById('setup-step1').hidden = false;
+    document.getElementById('setup-step2').hidden = true;
+  }
+
+  function choosePlayers(humanCount, total){
+    const n = total || setupTotal || 2;
+    state.players = Array.from({ length: n }, (_, i) => ({
+      id: i, type: i < humanCount ? 'human' : 'bot', name: 'P' + (i+1),
+    }));
     state.currentPlayerIndex = 0;
     state.history = [];
     state.pieces = [];
@@ -2297,20 +2485,26 @@
     document.getElementById('gameover').hidden = true;
     document.getElementById('gameover').classList.remove('go');
     document.getElementById('throw-btn').disabled = false;
-    for (let owner=0; owner<2; owner++) for (let idx=0; idx<2; idx++) state.pieces.push({ owner, idx, place:'start', nodeId:null });
+    for (let owner=0; owner<n; owner++)
+      for (let idx=0; idx<PIECES_PER_PLAYER; idx++)
+        state.pieces.push({ owner, idx, place:'start', nodeId:null });
     board3d.pieceMeshes.forEach(pm => {
+      pm.setExpression('neutral');
+      pm.walking = false;
+      pm.group.rotation.y = 0;
+      if (pm.owner >= n){ board3d.seatOut(pm); return; }   // sitting this one out
       pm.slot = 'bench:'+pm.owner+':'+pm.idx;
       const [x,z] = board3d.benchPos(pm.owner, pm.idx);
       pm.group.position.set(x,0,z);
-      pm.setExpression('neutral');
       pm.setPose('idle');
-      pm.walking = false;
       pm.faceTowards(0, 1);
-      pm.group.rotation.y = 0;
     });
+    board3d.showRestCamp(n);
     if (board3d.hushAll) board3d.hushAll();
     renderPlayerBar();
     renderHistory();
+    document.getElementById('setup-step1').hidden = false;
+    document.getElementById('setup-step2').hidden = true;
     showScreen('game');
     board3d.exitTitleMode();
     startBGM();
@@ -2321,11 +2515,13 @@
     const bar = document.getElementById('player-bar');
     bar.innerHTML = '';
     state.players.forEach((p,i) => {
-      if (i>0){ const vs=document.createElement('span'); vs.className='vs-divider'; vs.textContent='vs'; bar.appendChild(vs); }
+      if (i>0 && state.players.length === 2){ const vs=document.createElement('span'); vs.className='vs-divider'; vs.textContent='vs'; bar.appendChild(vs); }
       const badge = document.createElement('span');
       const isActive = i === state.currentPlayerIndex;
       badge.className = 'player-badge p'+i+(isActive?' active':'');
-      const names = board3d.pieceMeshes
+      // three or four badges only fit if they drop the character names —
+      // the turn panel on the left carries those
+      const names = state.players.length > 2 ? '' : board3d.pieceMeshes
         .filter(pm => pm.owner === i)
         .map(pm => pm.charName || '')
         .filter(Boolean)
@@ -2337,6 +2533,30 @@
       bar.appendChild(badge);
     });
     document.getElementById('spectator-banner').hidden = !state.players.every(p => p.type==='bot');
+    renderTurnPanel();
+  }
+
+  // ---- whose turn it is, and who is up next (top-left) ----
+  function renderTurnPanel(){
+    const box = document.getElementById('turn-panel');
+    if (!box || !state.players) return;
+    const n = state.players.length;
+    const cur = state.currentPlayerIndex;
+    const nxt = (cur + 1) % n;
+    const row = (label, i, cls) => {
+      const p = state.players[i];
+      const names = board3d.pieceMeshes.filter(pm => pm.owner === i)
+        .map(pm => pm.charName).filter(Boolean).join('·');
+      return '<div class="turn-row ' + cls + '">'
+        + '<span class="turn-label">' + label + '</span>'
+        + '<span class="turn-dot p' + i + '"></span>'
+        + '<span class="turn-who">' + p.name + ' ' + (p.type === 'human' ? '🧑' : '🤖')
+        + '<em>' + names + '</em></span></div>';
+    };
+    box.innerHTML = row('현재', cur, 'now')
+      + (n > 1 ? row('다음', nxt, 'next') : '')
+      + (state.extraThrows > 0 ? '<div class="turn-extra">➕ 한 번 더 · ' + state.extraThrows + '회</div>' : '');
+    box.hidden = false;
   }
   function renderHistory(){
     const box = document.getElementById('throw-history');
@@ -2405,13 +2625,15 @@
 
   // only the punchy moments get spoken aloud — idle chatter stays as bubbles
   const SPOKEN_KINDS = ['capture','caught','great','good','meh','bad','turn','finish','win','lose','together'];
-  function sayLine(pieceMesh, kind, ms){
+  function sayLine(pieceMesh, kind, ms, opts){
     if (!pieceMesh || !board3d.speak) return;
-    const persona = SPEECH_LINES[pieceMesh.personaIndex || 0] || SPEECH_LINES[0];
+    const persona = SPEECH_LINES[(pieceMesh.personaIndex || 0) % SPEECH_LINES.length];
     const pool = persona[kind] || persona.idle;
     const line = pool[Math.floor(Math.random()*pool.length)];
     board3d.speak(pieceMesh, line, ms);
-    if (SPOKEN_KINDS.indexOf(kind) !== -1) sayAloud(line, pieceMesh.personaIndex);
+    if (SPOKEN_KINDS.indexOf(kind) === -1) return;
+    if (opts && opts.onlyIfQuiet && speechBusy()) return;
+    sayAloud(line, pieceMesh.personaIndex);
   }
 
   function reactionEmojiFor(category){
@@ -2552,7 +2774,7 @@
   }
 
   function winnerOf(){
-    for (let o = 0; o < 2; o++){
+    for (let o = 0; o < state.players.length; o++){
       const mine = state.pieces.filter(p => p.owner === o);
       if (mine.length && mine.every(p => p.place === 'finished')) return o;
     }
@@ -2564,8 +2786,11 @@
     const el = document.getElementById('gameover');
     const winName = state.players[winner].name + ' ' +
       board3d.pieceMeshes.filter(pm => pm.owner === winner).map(pm => pm.charName).join('·');
-    const loseName = state.players[1-winner].name + ' ' +
-      board3d.pieceMeshes.filter(pm => pm.owner === 1-winner).map(pm => pm.charName).join('·');
+    const loseName = state.players
+      .filter(p => p.id !== winner)
+      .map(p => p.name + ' ' + board3d.pieceMeshes.filter(pm => pm.owner === p.id)
+        .map(pm => pm.charName).join('·'))
+      .join('  /  ');
     document.getElementById('go-win-name').textContent = winName;
     document.getElementById('go-lose-name').textContent = loseName;
     el.hidden = false;
@@ -2574,9 +2799,10 @@
     playFanfare();
     // winners cheer, losers slump
     board3d.pieceMeshes.forEach((pm, i) => {
+      if (pm.owner >= state.players.length) return;        // resting in the camp
       if (pm.owner === winner){ pm.setExpression('excited'); pm.setPose('cheer'); }
       else { pm.setExpression('sad'); pm.setPose('droop'); }
-      setTimeout(() => sayLine(pm, pm.owner === winner ? 'win' : 'lose', 4000), 500 + i*350);
+      setTimeout(() => sayLine(pm, pm.owner === winner ? 'win' : 'lose', 4000), 500 + i*450);
     });
     board3d.toOverview();
   }
@@ -2592,6 +2818,7 @@
     document.getElementById('shortcut-prompt').hidden = true;
     stopBGM();
     if (board3d.hushAll) board3d.hushAll();
+    board3d.showRestCamp(0);
     board3d.pieceMeshes.forEach(pm => {
       pm.slot = 'bench:' + pm.owner + ':' + pm.idx;
       const [x, z] = board3d.benchPos(pm.owner, pm.idx);
@@ -2608,7 +2835,7 @@
   function restartGame(){
     document.getElementById('gameover').hidden = true;
     document.getElementById('gameover').classList.remove('go');
-    choosePlayers(state.players.filter(p => p.type === 'human').length);
+    choosePlayers(state.players.filter(p => p.type === 'human').length, state.players.length);
   }
 
   function askShortcut(owner){
@@ -2757,7 +2984,7 @@
       state.extraThrows--;
       setBotThinking(false);
     } else {
-      state.currentPlayerIndex = 1 - owner;
+      state.currentPlayerIndex = (owner + 1) % state.players.length;
     }
     renderPlayerBar();
     await board3d.toOverview();
@@ -2795,12 +3022,23 @@
 
   // four different idols — one per piece, so nobody has a twin on the board.
   // Team membership is shown by the coloured ring at their feet instead.
-  const IDOLS = [
-    [ { url:'./models/shino.vrm',    name:'시노' },
-      { url:'./models/vita.vrm',     name:'비타' } ],
-    [ { url:'./models/vivi.vrm',     name:'비비' },
-      { url:'./models/victoria.vrm', name:'빅토리아' } ],
+  // Up to four players hold two pieces each, so the cast runs to eight. Five
+  // redistributable VRoid models are in docs/models; the last three slots
+  // reuse the first three and are told apart by name and team ring. Drop
+  // another .vrm in the roster and it takes the next slot automatically.
+  const IDOL_ROSTER = [
+    { url:'./models/shino.vrm',    name:'시노' },
+    { url:'./models/vita.vrm',     name:'비타' },
+    { url:'./models/vivi.vrm',     name:'비비' },
+    { url:'./models/victoria.vrm', name:'빅토리아' },
+    { url:'./models/fumiriya.vrm', name:'후미리야' },
   ];
+  const CAST_SIZE = 8;
+  const CAST = Array.from({ length: CAST_SIZE }, (_, i) => {
+    const base = IDOL_ROSTER[i % IDOL_ROSTER.length];
+    const dup = Math.floor(i / IDOL_ROSTER.length);
+    return { url: base.url, name: base.name + ['', ' II', ' III'][dup] };
+  });
   const TARGET_HEIGHT = 1.5;
 
   const loadingEl = document.getElementById('loading');
@@ -2848,6 +3086,10 @@
     holdR:   { armDown: 1.40, armSwing: 0.06, elbow: 0.26, armDownR: 1.16, armSwingR: 0.02, elbowR: 0.16, head:-0.04 },
     holdL:   { armDown: 1.40, armSwing: 0.06, elbow: 0.26, armDownL: 1.16, armSwingL: 0.02, elbowL: 0.16, head:-0.04 },
     think:   { armDown: 1.42, armSwing: 0.08, elbow: 0.30, armDownR: 0.85, armSwingR:-0.55, elbowR: 1.60, head: 0.14, torso: 0.06 },
+    // resting on a stump: thighs forward, shins down, hands on her knees.
+    // `lift` drops the whole body onto the seat.
+    sit:     { armDown: 1.22, armSwing: 0.16, elbow: 0.62, torso: 0.07, head: 0.03,
+               hip:-1.30, knee: 1.28, foot:-0.06, lift:-0.40 },
   };
 
   // Each idol stands and celebrates differently. Poses may override a single
@@ -2858,7 +3100,7 @@
       idle:  { armDown: 1.46, armSwing: 0.13, elbow: 0.62 },
       greet: { armDown: 1.46, armSwing: 0.13, elbow: 0.66, head: 0.16 },   // 목례
       think: { armDown: 1.44, armSwing: 0.08, elbow: 0.55, armDownR: 0.9, armSwingR:-0.5, elbowR: 1.6, head: 0.1 },
-      cheer: { armDown: 0.10, armSwing:-0.35, elbow: 1.05, head:-0.08 },
+      cheer: { armDown:-0.30, armSwing:-0.30, elbow: 1.15, head:-0.08 },
       droop: { armDown: 1.50, armSwing: 0.05, elbow: 0.45, torso: 0.26, head: 0.34 },
     },
     { // 비타 — 씩씩한 모험가: 두 손을 허리 앞에 두고 당당하게, 기쁘면 만세
@@ -2895,7 +3137,7 @@
   const EXPRESSION_KEYS = ['happy','sad','angry','relaxed','surprised','aa','oh','ih','ee','ou'];
 
   function wrapVrm(vrm, charName, personaIndex){
-    const persona = PERSONA_POSES[personaIndex] || {};
+    const persona = PERSONA_POSES[personaIndex % PERSONA_POSES.length] || {};
     const group = new THREE.Group();
     group.add(vrm.scene);
 
@@ -2977,6 +3219,12 @@
         let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0, footL = 0, footR = 0;
         let armMixDown = null, armMixElbow = null, walkTwist = 0, walkRoll = 0;
 
+        if (!this.walking && (p.hip || p.knee || p.foot)){
+          // a pose can pose the legs too — that's what sitting needs
+          hipL = num(p.hip); hipR = num(p.hip) - 0.05;
+          kneeL = num(p.knee); kneeR = num(p.knee) + 0.05;
+          footL = num(p.foot); footR = num(p.foot);
+        }
         if (this.walking){
           // stride follows the body's real speed, so the feet stop skating
           const rate = Math.max(2.4, Math.min(11, (this.walkSpeed || 2.7) * 2.9));
@@ -2999,7 +3247,8 @@
           walkTwist = Math.sin(w) * 0.10;
           walkRoll = Math.cos(w) * 0.045;
         } else {
-          vrm.scene.position.y = Math.sin(now/(560 + (personaIndex||0)*70)) * 0.012;
+          vrm.scene.position.y = num(p.lift)
+            + Math.sin(now/(560 + (personaIndex||0)*70)) * 0.012;
         }
 
         const useDownL = armMixDown === null ? num(downL) : armMixDown;
@@ -3069,31 +3318,27 @@
     const loader = new GLTFLoader();
     loader.register(parser => new VRMLoaderPlugin(parser));
 
-    const perOwner = [];
+    const cast = [];
     let done = 0;
-    for (let owner = 0; owner < 2; owner++){
-      const instances = [];
-      for (let idx = 0; idx < 2; idx++){
-        const idol = IDOLS[owner][idx];
-        const gltf = await loader.loadAsync(idol.url, evt => {
-          if (evt.total) setProgress((done + evt.loaded/evt.total) / 4);
-        });
-        const vrm = gltf.userData.vrm;
-        if (!vrm) throw new Error('not a VRM: ' + idol.url);
-        if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
-        if (VRMUtils.combineSkeletons) VRMUtils.combineSkeletons(gltf.scene);
-        if (VRMUtils.rotateVRM0) VRMUtils.rotateVRM0(vrm);   // VRM 0.x faces -Z otherwise
-        vrm.scene.traverse(o => {
-          o.frustumCulled = false;
-          if (o.isMesh) o.castShadow = true;
-        });
-        instances.push(wrapVrm(vrm, idol.name, owner*2 + idx));
-        done++;
-        setProgress(done / 4);
-      }
-      perOwner.push(instances);
+    for (let i = 0; i < CAST_SIZE; i++){
+      const idol = CAST[i];
+      const gltf = await loader.loadAsync(idol.url, evt => {
+        if (evt.total) setProgress((done + evt.loaded/evt.total) / CAST_SIZE);
+      });
+      const vrm = gltf.userData.vrm;
+      if (!vrm) throw new Error('not a VRM: ' + idol.url);
+      if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
+      if (VRMUtils.combineSkeletons) VRMUtils.combineSkeletons(gltf.scene);
+      if (VRMUtils.rotateVRM0) VRMUtils.rotateVRM0(vrm);   // VRM 0.x faces -Z otherwise
+      vrm.scene.traverse(o => {
+        o.frustumCulled = false;
+        if (o.isMesh) o.castShadow = true;
+      });
+      cast.push(wrapVrm(vrm, idol.name, i));
+      done++;
+      setProgress(done / CAST_SIZE);
     }
-    return perOwner;
+    return cast;
   }
 
   // ---- CC0 nature props (Kenney Nature Kit) for every 자리 ----
@@ -3114,6 +3359,8 @@
     'lily_large','crops_cornStageD','plant_flatShort','tree_oak_fall',
     'tree_blocks_fall','stump_old','tree_pineSmallB','tree_pineTallB',
     'campfire_logs','stone_tallA','rock_largeC',
+    // the rest camp for whoever is sitting the game out
+    'stump_squareDetailedWide','stump_oldTall','tent_smallOpen',
   ];
   async function loadProps(){
     const loader = new GLTFLoader();
@@ -3136,12 +3383,13 @@
 
   let makeCharacter;
   try {
-    const idols = await loadIdols();
-    makeCharacter = (owner, idx) => idols[owner][idx];
-    console.log('VRM idols loaded');
+    const cast = await loadIdols();
+    makeCharacter = (owner, idx) => cast[owner*2 + idx];
+    console.log('VRM idols loaded:', cast.length);
   } catch (err) {
     console.warn('VRM load failed — using the built-in characters instead.', err);
-    makeCharacter = (owner, idx) => buildAnimeCharacter(CHARACTER_DESIGNS[owner], idx);
+    makeCharacter = (owner, idx) =>
+      buildAnimeCharacter(CHARACTER_DESIGNS[owner % CHARACTER_DESIGNS.length], (owner*2 + idx) % 2);
   }
 
   window.board3d = initBoard3d(makeCharacter);

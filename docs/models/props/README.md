@@ -35,6 +35,17 @@
 - **가을(쨀밭)**: `crops_wheatStageB` `crop_pumpkin` `stump_round`
 - **겨울(날밭)**: `tree_pineSmallA` `tree_pineSmallC` `stone_smallC`
 
+## 휴식처 (참가하지 않는 캐릭터)
+
+게임에 참여하지 않는 캐릭터는 판 옆 휴식처에서 쉰다. Nature Kit에 의자는 없지만
+밭으로 만든 판에는 가구보다 그루터기가 어울린다.
+
+| 용도 | 모델 |
+|---|---|
+| 앉는 자리 | `stump_squareDetailedWide` |
+| 천막 | `tent_smallOpen` |
+| 모닥불 | `campfire_logs` |
+
 ## 폴백
 
 모델을 불러올 수 없는 환경(Claude Artifact는 CSP상 모델 파일 요청이 막힌다)에서는

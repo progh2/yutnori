@@ -8,10 +8,18 @@
 | `vita.vrm` | ヴィータ (Vita / AvatarSample_F) | P1 둘째 말 | VRoid Studio 샘플 모델 |
 | `vivi.vrm` | ビビ (Vivi / AvatarSample_E) | P2 첫째 말 | VRoid Studio 샘플 모델 |
 | `victoria.vrm` | ヴィクトリア・ルービン (Victoria Rubin / AvatarSample_G) | P2 둘째 말 | VRoid Studio 샘플 모델 |
+| `fumiriya.vrm` | 桜田史利矢 (Sakurada Fumiriya) | P3 첫째 말 | VRoid Studio 샘플 모델 |
 
 - 제작: VRoid プロジェクト (pixiv Inc.)
 - 배포처: [OpenGameArt — VRoid Studio CC0 models](https://opengameart.org/content/vroid-studio-cc0-models) (CC0로 정리된 팩)
 - 원 출처 안내: [VRoid 공식 FAQ — 샘플 모델의 이용 조건](https://vroid.pixiv.help/hc/en-us/articles/4402614652569-Do-VRoid-Studio-s-sample-models-come-with-conditions-of-use)
+
+## 8명의 배역, 5개의 모델
+
+최대 4명이 각각 말 2개를 쓰므로 배역은 8자리다. 재배포가 허용된 모델을 5개 확보해
+앞 5자리에 서로 다른 캐릭터를 넣고, 남는 3자리는 앞의 모델을 다시 쓰면서 이름에
+`II`를 붙이고 발밑 팀 색상 링으로 구분한다. `IDOL_ROSTER`에 `.vrm`을 추가하면
+다음 자리부터 자동으로 그 모델을 쓴다.
 
 ## 파일에 내장된 이용 허가 (VRM meta)
 
