@@ -28,6 +28,12 @@ function test(name, fn){
   catch (err){ failures.push({ name, err }); }
 }
 
+// Values that come back from the vm context carry that context's prototypes,
+// which assert/strict refuses to compare against ours. Structure is what we
+// care about here, so flatten both sides first.
+const plain = v => JSON.parse(JSON.stringify(v));
+const deepEq = (actual, expected, msg) => assert.deepEqual(plain(actual), expected, msg);
+
 // ------------------------------------------------------------- script blocks
 // only plain <script> blocks; the module bootstrap and the importmap are skipped
 const blocks = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
@@ -135,7 +141,7 @@ test('the board is 29 밭', () => {
 });
 
 test('the four corners are 참먹이 and the three 모 계열', () => {
-  assert.deepEqual(api.CORNER_IDS, ['o0', 'o5', 'o10', 'o15']);
+  deepEq(api.CORNER_IDS, ['o0', 'o5', 'o10', 'o15']);
   assert.equal(api.NODES.o0.kind, 'gate');
   ['o5', 'o10', 'o15'].forEach(id => assert.equal(api.NODES[id].kind, 'corner'));
   assert.equal(api.nodeName('o5'), '모');
@@ -171,14 +177,14 @@ test('the ring loops and every arm leads to 방', () => {
 
 // ------------------------------------------------------- 이동 (plan.md 4.3)
 test('walking the ring visits each 밭 in order', () => {
-  assert.deepEqual(api.walkPath('o0', 5, false), ['o1', 'o2', 'o3', 'o4', 'o5']);
+  deepEq(api.walkPath('o0', 5, false), ['o1', 'o2', 'o3', 'o4', 'o5']);
 });
 
 test('a corner can take the shortcut on the very next step only', () => {
-  assert.deepEqual(api.walkPath('o5', 1, true), ['mo-1']);
-  assert.deepEqual(api.walkPath('o5', 1, false), ['o6']);
+  deepEq(api.walkPath('o5', 1, true), ['mo-1']);
+  deepEq(api.walkPath('o5', 1, false), ['o6']);
   // the shortcut applies to the first hop, not later ones
-  assert.deepEqual(api.walkPath('o5', 2, true), ['mo-1', 'mo-2']);
+  deepEq(api.walkPath('o5', 2, true), ['mo-1', 'mo-2']);
 });
 
 test('the shortest completion is 11 칸', () => {
@@ -192,21 +198,21 @@ test('the shortest completion is 11 칸', () => {
   assert.equal(at, 'mo-1');
   const rest = api.walkPath(at, 5, false); // 모개 · 방 · 안찌 · 사려 · 완주
   steps += 5;
-  assert.deepEqual(rest, ['mo-2', 'bang', 'anjji', 'saryeo', 'FINISH']);
+  deepEq(rest, ['mo-2', 'bang', 'anjji', 'saryeo', 'FINISH']);
   assert.equal(steps, 11);
 });
 
 test('a path that reaches 참먹이 finishes instead of stepping onto it', () => {
   const path = api.walkPath('saryeo', 1, false);
-  assert.deepEqual(path, ['FINISH']);
+  deepEq(path, ['FINISH']);
 });
 
 test('빽도 retraces the 밭 the piece actually came from', () => {
   // 방 has three possible predecessors, so the caller passes the real one
-  assert.deepEqual(api.walkPath('bang', -1, false, 'dm-2'), ['dm-2']);
-  assert.deepEqual(api.walkPath('bang', -1, false, 'mo-2'), ['mo-2']);
+  deepEq(api.walkPath('bang', -1, false, 'dm-2'), ['dm-2']);
+  deepEq(api.walkPath('bang', -1, false, 'mo-2'), ['mo-2']);
   // without that hint it falls back to the graph's own PREV
-  assert.deepEqual(api.walkPath('o3', -1, false), ['o2']);
+  deepEq(api.walkPath('o3', -1, false), ['o2']);
 });
 
 // ------------------------------------------- 업기 · 잡기 · 승리 (plan.md 4.4-4.6)
