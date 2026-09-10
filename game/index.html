@@ -170,9 +170,10 @@
   .shortcut-prompt .no{ background:var(--line-dim); color:var(--cream-ink); }
 
   /* ---- setup screen ---- */
+  /* lower third, clear of both the bottom edge and the four of them above */
   #screen-setup .hud{ align-items:center; justify-content:flex-end; }
   .setup-card{
-    margin-bottom: 3vh;
+    margin-bottom: 13vh;
     background: rgba(10,40,32,.42); backdrop-filter: blur(7px);
     border: 1px solid rgba(251,241,217,.2);
     border-radius: 22px; padding: 16px 20px 18px;
@@ -216,9 +217,28 @@
     opacity:0; transition:opacity .18s linear; will-change:transform,opacity;
   }
   .board-label.key{ font-size:13.5px; color:#ffe6a8; font-weight:400; }
+  /* the 절기 that 자리 stands for, under its name */
+  .board-label em{
+    display:block; font-style:normal; font-size:9.5px; letter-spacing:.06em;
+    color:#bfe3cf; opacity:.85;
+  }
   .board-label.field{
     font-size:16px; color:#ffe6a8; letter-spacing:.14em;
     text-shadow:0 2px 5px rgba(0,0,0,.95);
+  }
+  /* ---- who is who: a name tag over each character's head ---- */
+  .char-tag{
+    position:fixed; left:0; top:0; white-space:nowrap;
+    font-family:"Jua",sans-serif; font-size:12px; line-height:1;
+    padding:4px 10px 5px; border-radius:999px;
+    color:#2a2018; background:rgba(253,246,227,.93);
+    border:1.5px solid var(--team);
+    box-shadow:0 4px 12px -5px rgba(0,0,0,.7);
+    opacity:0; transition:opacity .18s linear; will-change:transform,opacity;
+  }
+  .char-tag i{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    margin-right:5px; vertical-align:0; background:var(--team);
   }
 
   /* ---- character speech bubbles ---- */
@@ -577,6 +597,41 @@
   }
 
   // id → { pos, name, kind, animal, field }
+  // The 24 절기, laid on the 24 자리 that are left once 방 and the four
+  // corners are set aside (docs/yutpan.md §3). Each 밭 holds exactly six —
+  // the six 절기 of its season — and the corner it ends on is the turn of the
+  // season. So walking a lap really is walking a year.
+  const JEOLGI = {
+    // 앞밭 — 봄
+    'o1':  { term:'입춘', mean:'봄의 시작',       model:'crops_leafsStageA' },
+    'o2':  { term:'우수', mean:'눈이 녹아 비가 됨', model:'lily_small' },
+    'o3':  { term:'경칩', mean:'겨울잠에서 깨어남', model:'mushroom_tanGroup' },
+    'o4':  { term:'춘분', mean:'낮과 밤의 길이가 같음', model:'flower_redA' },
+    'mo-1':{ term:'청명', mean:'하늘이 맑고 밝음',  model:'tree_small' },
+    'mo-2':{ term:'곡우', mean:'곡식을 기르는 비',  model:'crops_wheatStageA' },
+    // 뒷밭 — 여름
+    'o6':  { term:'입하', mean:'여름의 시작',      model:'plant_bushLarge' },
+    'o7':  { term:'소만', mean:'만물이 조금씩 자람', model:'crops_cornStageB' },
+    'o8':  { term:'망종', mean:'보리 베고 모 심기', model:'crops_wheatStageB' },
+    'o9':  { term:'하지', mean:'낮이 가장 긴 날',   model:'flower_yellowA' },
+    'dm-1':{ term:'소서', mean:'더위가 시작됨',    model:'grass_leafsLarge' },
+    'dm-2':{ term:'대서', mean:'가장 더운 때',     model:'lily_large' },
+    // 쨀밭 — 가을
+    'o11': { term:'입추', mean:'가을의 시작',      model:'crops_cornStageD' },
+    'o12': { term:'처서', mean:'더위가 그침',      model:'plant_flatShort' },
+    'o13': { term:'백로', mean:'흰 이슬이 맺힘',    model:'grass_leafs' },
+    'o14': { term:'추분', mean:'거두어들이는 때',   model:'crop_pumpkin' },
+    'sok-1':{ term:'한로', mean:'찬 이슬이 내림',   model:'tree_oak_fall' },
+    'sok-2':{ term:'상강', mean:'서리가 내림',     model:'tree_blocks_fall' },
+    // 날밭 — 겨울
+    'o16': { term:'입동', mean:'겨울의 시작',      model:'stump_old' },
+    'o17': { term:'소설', mean:'첫눈이 내림',      model:'tree_pineSmallB' },
+    'o18': { term:'대설', mean:'큰 눈이 내림',     model:'tree_pineTallB' },
+    'o19': { term:'동지', mean:'밤이 가장 긴 날',   model:'campfire_logs' },
+    'anjji': { term:'소한', mean:'조금 추움',      model:'stone_tallA' },
+    'saryeo':{ term:'대한', mean:'가장 추운 때',    model:'rock_largeC' },
+  };
+
   const NODES = {};
   const OUTER_NAMES = [
     '참먹이', '도', '개', '걸', '윷', '모',
@@ -784,12 +839,16 @@
   // ---- voice: the browser's own speech synthesis, so no audio files and no
   // licence to worry about. Availability depends on the OS's Korean voices, so
   // everything here degrades to silence if none are installed. ----
-  const voice = { enabled:true, ko:null };
+  const voice = { enabled:true, ko:null, perPersona:[null,null,null,null] };
   function initVoices(){
     if (!('speechSynthesis' in window)) return;
     const pick = () => {
       const list = speechSynthesis.getVoices() || [];
-      voice.ko = list.find(v => /^ko/i.test(v.lang)) || null;
+      const ko = list.filter(v => /^ko/i.test(v.lang));
+      voice.ko = ko[0] || null;
+      // hand each idol her own voice when the system has several Korean ones,
+      // otherwise they're separated by pitch and rate alone
+      voice.perPersona = [0,1,2,3].map(i => ko.length ? ko[i % ko.length] : null);
     };
     pick();
     speechSynthesis.addEventListener('voiceschanged', pick);
@@ -802,23 +861,71 @@
   ];
   const LAUGHS = ['후훗, 후훗', '하하하!', '히히히!', '호호호!'];
 
-  function sayAloud(text, personaIndex){
+  // Lines are queued rather than spoken over each other: cutting one off
+  // mid-word to start the next sounded broken, so each one waits its turn.
+  // The queue is short — if the game runs ahead, the oldest waiting line is
+  // dropped instead of letting the voices fall behind the action.
+  const speechQueue = [];
+  let speaking = null, speechTimer = 0;
+  const MAX_QUEUE = 3;
+
+  function pumpSpeech(){
+    if (speaking || !speechQueue.length) return;
+    const item = speechQueue.shift();
+    speaking = item;
+    const done = () => {
+      if (speaking !== item) return;
+      speaking = null;
+      clearTimeout(speechTimer);
+      setTimeout(pumpSpeech, 90);          // a beat of silence between lines
+    };
+    try {
+      const u = new SpeechSynthesisUtterance(item.text);
+      if (item.voice) u.voice = item.voice;
+      u.lang = 'ko-KR';
+      u.pitch = item.pitch; u.rate = item.rate; u.volume = 0.95;
+      u.onstart = () => { if (item.onstart) item.onstart(); };
+      u.onend = done;
+      u.onerror = done;
+      // some browsers never fire onend; don't let the queue wedge
+      speechTimer = setTimeout(done, 1600 + item.text.length * 190);
+      speechSynthesis.speak(u);
+    } catch (e) { done(); }
+  }
+
+  function sayAloud(text, personaIndex, opts){
     if (!voice.enabled || !audio.enabled) return;
     if (!('speechSynthesis' in window)) return;
-    try {
-      const u = new SpeechSynthesisUtterance(text);
-      if (voice.ko) u.voice = voice.ko;
-      u.lang = 'ko-KR';
-      const tone = VOICE_TONE[personaIndex || 0] || VOICE_TONE[0];
-      u.pitch = tone.pitch; u.rate = tone.rate; u.volume = 0.95;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(u);
-    } catch (e) {}
+    const tone = VOICE_TONE[personaIndex || 0] || VOICE_TONE[0];
+    speechQueue.push({
+      text, onstart: opts && opts.onstart,
+      voice: voice.perPersona[personaIndex || 0] || voice.ko,
+      pitch: tone.pitch, rate: tone.rate,
+    });
+    while (speechQueue.length > MAX_QUEUE) speechQueue.shift();
+    pumpSpeech();
   }
+  function clearSpeech(){
+    speechQueue.length = 0;
+    speaking = null;
+    clearTimeout(speechTimer);
+    try { speechSynthesis.cancel(); } catch (e) {}
+  }
+  // spoken once, the first time the page is allowed to make a sound
+  const WELCOME_LINE = '별밭 윷놀이에 오신 것을 환영합니다.';
+  let welcomeDone = false;
+  function speakWelcome(){
+    if (welcomeDone) return;
+    sayAloud(WELCOME_LINE, 0, { onstart(){ welcomeDone = true; } });
+  }
+  // browsers stay silent until the page has been interacted with, so try at
+  // boot and again on the first click or key press
+  ['pointerdown','keydown','touchstart'].forEach(ev =>
+    window.addEventListener(ev, () => setTimeout(speakWelcome, 50), { passive:true }));
   function laughAloud(personaIndex){ sayAloud(LAUGHS[personaIndex || 0] || LAUGHS[1], personaIndex); }
   function toggleVoice(){
     voice.enabled = !voice.enabled;
-    if (!voice.enabled && 'speechSynthesis' in window) speechSynthesis.cancel();
+    if (!voice.enabled) clearSpeech();
     const btn = document.getElementById('voice-toggle');
     btn.textContent = voice.enabled ? '🗣️' : '🤐';
     btn.classList.toggle('on', voice.enabled);
@@ -1122,6 +1229,7 @@
       poseTarget: Object.assign({}, IDLE),
       walking: false,
       walkPhase: 0,
+      walkSpeed: 0,
       facing: 0,
       headExtra: 0,
       getHeadWorldPosition(out){ return head.getWorldPosition(out); },
@@ -1165,7 +1273,7 @@
         }
         // walk cycle overrides legs/arms while moving
         if (this.walking){
-          this.walkPhase += dt * 7;
+          this.walkPhase += dt * Math.max(2.2, Math.min(10, (this.walkSpeed || 2.4) * 2.9));
           const p = this.walkPhase;
           joints.hipL.rotation.x = Math.sin(p) * 0.6;
           joints.hipR.rotation.x = -Math.sin(p) * 0.6;
@@ -1174,7 +1282,7 @@
           joints.shoulderL.rotation.x = -Math.sin(p) * 0.45;
           joints.shoulderR.rotation.x = Math.sin(p) * 0.45;
           joints.torso.rotation.z = Math.sin(p) * 0.04;
-          bob.position.y = Math.abs(Math.sin(p)) * 0.05;
+          bob.position.y = 0.026 * (1 + Math.cos(2*p));
         } else {
           bob.position.y = Math.sin(now / 620) * 0.022;
         }
@@ -1291,7 +1399,23 @@
       const lib = window.PROP_MODELS || {};
       return lib[name] ? lib[name].clone(true) : null;
     }
+    // A 자리's scenery is its 절기 — 입춘 puts out shoots, 동지 lights a fire.
+    // The four corners and 방 keep their monuments, since those are the turns
+    // of the season and the pole star rather than 절기.
+    const JEOLGI_SCALE = {
+      crops_leafsStageA:2.0, lily_small:2.2, mushroom_tanGroup:2.2, flower_redA:2.2,
+      tree_small:1.5, crops_wheatStageA:2.0, plant_bushLarge:1.7, crops_cornStageB:1.9,
+      crops_wheatStageB:2.0, flower_yellowA:2.2, grass_leafsLarge:1.9, lily_large:1.9,
+      crops_cornStageD:1.7, plant_flatShort:2.1, grass_leafs:2.2, crop_pumpkin:2.1,
+      tree_oak_fall:1.3, tree_blocks_fall:1.3, stump_old:1.9, tree_pineSmallB:1.5,
+      tree_pineTallB:1.2, campfire_logs:2.0, stone_tallA:1.7, rock_largeC:1.6,
+    };
     function propForNode(id, node){
+      const jg = JEOLGI[id];
+      if (jg){
+        const m = propClone(jg.model);
+        if (m){ m.userData.jeolgiScale = JEOLGI_SCALE[jg.model] || 1.8; return m; }
+      }
       const pool = PROP_MAP[node.animal];
       if (!pool) return null;
       const i = node.animal === 'step'
@@ -1320,9 +1444,23 @@
 
       g.add(baseDisc(node, mat));
 
+      // 도 1 · 개 2 · 걸 3 · 윷 4 — the animal's rank as pebbles on the rim, so
+      // the name still means something now that the scenery belongs to a 절기
+      const RANK = { pig:1, dog:2, sheep:3, cow:4 };
+      const rank = RANK[node.animal] || 0;
+      for (let i = 0; i < rank; i++){
+        const pip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), mat(0x4b3a2a, 0.6));
+        const a = -Math.atan2(outZ, outX) + Math.PI/2;
+        const spread = (i - (rank-1)/2) * 0.17;
+        pip.position.set(Math.cos(a)*spread - outX*0.34, 0.1, -Math.sin(a)*spread - outZ*0.34);
+        pip.scale.y = 0.6;
+        g.add(pip);
+      }
+
       const prop = propForNode(id, node);
       if (prop){
-        const sc = (PROP_SCALE[node.animal] || 1.6) * (0.92 + rand()*0.16);
+        const base = prop.userData.jeolgiScale || PROP_SCALE[node.animal] || 1.6;
+        const sc = base * (0.92 + rand()*0.16);
         prop.scale.setScalar(sc);
         if (node.animal === 'gate'){
           // straddles the 밭 so she walks through it
@@ -1331,7 +1469,7 @@
         } else if (node.animal === 'star'){
           prop.rotation.y = rand()*Math.PI*2;
         } else {
-          prop.position.set(outX*0.78, 0, outZ*0.78);   // beside the standing spot
+          prop.position.set(outX*0.95, 0, outZ*0.95);   // clear of where she stands
           prop.rotation.y = rand()*Math.PI*2;
         }
         g.add(prop);
@@ -1345,15 +1483,18 @@
         starSpin = star;
       }
 
-      // seasonal dressing from the same kit
+      // seasonal dressing, kept in the outward hemisphere so it never grows
+      // through the character standing on the inward side of the 밭
       const set = DECOR_SETS[node.field] || DECOR_SETS[0];
+      const outAngle = Math.atan2(outZ, outX);
       const n = 2 + Math.floor(rand()*3);
       for (let i = 0; i < n; i++){
         const deco = propClone(set[Math.floor(rand()*set.length)]);
         if (!deco) continue;
-        const a = rand()*Math.PI*2, r = 0.95 + rand()*0.6;
+        const a = outAngle + (rand() - 0.5) * 2.0;      // ±57° of "away from her"
+        const r = 1.05 + rand()*0.65;
         deco.scale.setScalar(1.3 + rand()*0.7);
-        deco.position.set(Math.cos(a)*r + outX*0.35, 0, Math.sin(a)*r + outZ*0.35);
+        deco.position.set(Math.cos(a)*r, 0, Math.sin(a)*r);
         deco.rotation.y = rand()*Math.PI*2;
         g.add(deco);
       }
@@ -1502,10 +1643,15 @@
     // ---- floating name labels for every 자리 and every 밭 ----
     const labelLayer = document.getElementById('labels');
     const labels = [];
-    function addLabel(text, worldPos, cls){
+    function addLabel(text, worldPos, cls, sub){
       const el = document.createElement('span');
       el.className = 'board-label' + (cls ? ' ' + cls : '');
       el.textContent = text;
+      if (sub){
+        const em = document.createElement('em');
+        em.textContent = sub;
+        el.appendChild(em);
+      }
       labelLayer.appendChild(el);
       labels.push({ el, pos: worldPos, field: cls === 'field' });
     }
@@ -1513,7 +1659,8 @@
       const n = NODES[id];
       const y = n.kind === 'gate' ? 1.15 : n.kind === 'corner' ? 1.02 : n.kind === 'center' ? 0.78 : 0.3;
       addLabel(n.name, new THREE.Vector3(n.pos[0], y, n.pos[1]),
-        n.kind === 'center' || n.kind === 'gate' || n.kind === 'corner' ? 'key' : '');
+        n.kind === 'center' || n.kind === 'gate' || n.kind === 'corner' ? 'key' : '',
+        JEOLGI[id] ? JEOLGI[id].term : null);
     });
     fieldLabelAnchors.forEach((p, f) => addLabel(FIELD_NAMES[f], p, 'field'));
 
@@ -1543,7 +1690,7 @@
         if (!b.until || now > b.until){ b.el.classList.remove('show'); continue; }
         if (b.piece.getHeadWorldPosition) b.piece.getHeadWorldPosition(head);
         else head.copy(b.piece.group.position).add(new THREE.Vector3(0, 1.4, 0));
-        head.y += 0.42;
+        head.y += 0.58;
         projected.copy(head).project(camera);
         if (projected.z > 1){ b.el.classList.remove('show'); continue; }
         const x = rect.left + (projected.x*0.5 + 0.5) * rect.width;
@@ -1619,6 +1766,39 @@
       const r = 0.42;
       return Array.from({length:n}, (_,i) => { const a=(i/n)*Math.PI*2; return [Math.cos(a)*r, Math.sin(a)*r]; });
     }
+    // ---- name tags: four different idols, so say which one is which ----
+    const nameTags = pieceMeshes.map(pm => {
+      const el = document.createElement('div');
+      el.className = 'char-tag';
+      el.style.setProperty('--team', '#' + PLAYER_COLORS[pm.owner].toString(16).padStart(6,'0'));
+      el.innerHTML = '<i></i>' + (pm.charName || '');
+      labelLayer.appendChild(el);
+      return { el, piece: pm };
+    });
+    function updateNameTags(){
+      const rect = renderer.domElement.getBoundingClientRect();
+      const head = new THREE.Vector3();
+      for (const t of nameTags){
+        const pm = t.piece;
+        // the speech bubble takes the space over her head when she's talking
+        const bubble = bubbles.find(b => b.piece === pm);
+        if (bubble && bubble.until && performance.now() < bubble.until){
+          t.el.style.opacity = '0'; continue;
+        }
+        if (pm.getHeadWorldPosition) pm.getHeadWorldPosition(head);
+        else head.copy(pm.group.position).add(new THREE.Vector3(0, 1.4, 0));
+        head.y += 0.22;
+        const dist = camera.position.distanceTo(head);
+        projected.copy(head).project(camera);
+        if (projected.z > 1 || dist > 34){ t.el.style.opacity = '0'; continue; }
+        const x = rect.left + (projected.x*0.5 + 0.5) * rect.width;
+        const y = rect.top + (-projected.y*0.5 + 0.5) * rect.height;
+        t.el.style.transform = 'translate(-50%,-100%) translate('
+          + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+        t.el.style.opacity = String(Math.max(0.3, Math.min(1, (34 - dist) / 9)));
+      }
+    }
+
     function restackSlot(slot, exceptMesh){
       const occupants = pieceMeshes.filter(p => p.slot === slot);
       const offsets = ringOffsets(occupants.length);
@@ -1896,29 +2076,80 @@
     // ---- piece movement: she walks it, and the camera follows step by step ----
     // one 밭 is ~2 units apart on this ring, so this is roughly a walking pace
     const HOP_MS = 900;
+    // She walks the whole path in one go. Easing each hop separately made her
+    // brake to a halt on every 밭, which is what made the walk look wrong; now
+    // she accelerates once, holds a steady pace through the corners, and slows
+    // down only on arrival — and her stride is driven by that actual speed.
     async function movePiece(piece, path, followCamera){
-      let cur = piece.group.position.clone();
-      piece.walking = true;
-      piece.setPose('idle');
+      if (!path.length) return;
+      const pts = [piece.group.position.clone()];
+      const slots = [];
       for (const id of path){
-        const target = id === 'FINISH'
-          ? new THREE.Vector3(...(function(){ const [x,z]=finishPos(piece.owner,piece.idx); return [x,0,z]; })())
-          : new THREE.Vector3(standPos(id)[0], 0, standPos(id)[1]);
-        const from = cur.clone();
-        piece.faceTowards(target.x - from.x, target.z - from.z);
-        const jobs = [animate(HOP_MS, t => { piece.group.position.lerpVectors(from, target, easeInOutCubic(t)); })];
-        if (followCamera){
-          const camTarget = new THREE.Vector3(target.x*0.3+3.0, 3.0, target.z*0.3+4.2);
-          const lookTarget = new THREE.Vector3(target.x, 0.8, target.z);
-          jobs.push(tweenCamera(camTarget, lookTarget, HOP_MS));
+        if (id === 'FINISH'){
+          const [fx, fz] = finishPos(piece.owner, piece.idx);
+          pts.push(new THREE.Vector3(fx, 0, fz));
+          slots.push('finish:' + piece.owner + ':' + piece.idx);
+        } else {
+          const [sx, sz] = standPos(id);
+          pts.push(new THREE.Vector3(sx, 0, sz));
+          slots.push(id);
         }
-        await Promise.all(jobs);
-        playHop();
-        cur = target;
-        piece.slot = id === 'FINISH' ? ('finish:'+piece.owner+':'+piece.idx) : id;
+      }
+      const cum = [0];
+      for (let i = 1; i < pts.length; i++) cum.push(cum[i-1] + pts[i].distanceTo(pts[i-1]));
+      const total = cum[cum.length-1];
+      if (total < 1e-4) return;
+      const dur = HOP_MS * path.length;
+
+      piece.walking = true;
+      piece.walkPhase = 0;
+      piece.setPose('idle');
+
+      // trapezoid speed profile: ramp up, cruise, ramp down
+      const r = Math.min(0.3, 340 / dur);
+      const area = 1 - r;
+      const speedAt = t => (t < r ? t/r : (t > 1-r ? (1-t)/r : 1));
+      const distAt = t => (t <= r ? t*t/(2*r)
+                        : t <= 1-r ? r/2 + (t - r)
+                        : 1 - r - (1-t)*(1-t)/(2*r)) / area;
+
+      const pos = new THREE.Vector3();
+      const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
+      let reached = 0, seg = 1, lastT = performance.now();
+      await animate(dur, t => {
+        const now = performance.now();
+        const dt = Math.min(0.05, (now - lastT)/1000); lastT = now;
+        const s = distAt(t) * total;
+        while (seg < cum.length-1 && cum[seg] < s) seg++;
+        const span = cum[seg] - cum[seg-1] || 1;
+        pos.lerpVectors(pts[seg-1], pts[seg], Math.min(1, (s - cum[seg-1]) / span));
+        piece.group.position.copy(pos);
+        piece.faceTowards(pts[seg].x - pts[seg-1].x, pts[seg].z - pts[seg-1].z);
+        // metres per second, so the legs keep up with the body
+        piece.walkSpeed = speedAt(t) * total / area / (dur/1000 / (window.TIME_SCALE || 1));
+        // each 밭 she passes counts as landed on
+        while (reached < slots.length && cum[reached+1] <= s + 1e-4){
+          reached++;
+          playHop();
+          piece.slot = slots[reached-1];
+          restackSlot(piece.slot, piece);
+        }
+        if (followCamera){
+          camPos.set(pos.x*0.3 + 3.0, 3.0, pos.z*0.3 + 4.2);
+          camLook.set(pos.x, 0.8, pos.z);
+          camera.position.lerp(camPos, Math.min(1, dt * 3.2));
+          lookAt.lerp(camLook, Math.min(1, dt * 4.5));
+          camera.lookAt(lookAt);
+        }
+      });
+      while (reached < slots.length){
+        reached++;
+        piece.slot = slots[reached-1];
         restackSlot(piece.slot, piece);
       }
+      piece.group.position.copy(pts[pts.length-1]);
       piece.walking = false;
+      piece.walkSpeed = 0;
       piece.faceTowards(0, 1); // settle facing the camera side
     }
 
@@ -1941,12 +2172,30 @@
     // Two pieces can only share a 밭 if they're on the same side — landing on an
     // opponent captures it — so the shared square is 업기, and they're pleased
     // about it: they stand side by side, hold the inner hand and sway together.
-    let lastBonk = 0, lastGiggle = 0;
+    // both the 업기 greeting and the squabble bonk fire once per meeting —
+    // repeating them every few seconds was just noise
+    const greeted = new Set(), bonked = new Set();
+    // after the first meeting the pair just chats: each of them says her own
+    // line now and then instead of repeating "손 잡고 가요"
+    const nextChat = {};
     function applyGroupBehaviour(now){
       const bySlot = {};
       pieceMeshes.forEach(p => { if (!/^(bench|finish):/.test(p.slot)) (bySlot[p.slot] = bySlot[p.slot]||[]).push(p); });
+      // forget slots that no longer hold a pair
+      [greeted, bonked].forEach(set => set.forEach(slot => {
+        if ((bySlot[slot] || []).length < 2){ set.delete(slot); delete nextChat[slot]; }
+      }));
+      // once they've met, they take turns with their own idle lines
+      function keepChatting(slot, group){
+        if (nextChat[slot] === undefined){ nextChat[slot] = now + 5200; return; }
+        if (now < nextChat[slot]) return;
+        nextChat[slot] = now + 7000 + Math.random()*5000;
+        const who = group[Math.floor(Math.random()*group.length)];
+        if (window.sayLine && !who.walking) sayLine(who, 'idle', 3600);
+      }
       Object.values(bySlot).forEach(group => {
         if (group.length < 2) return;
+        const slot = group[0].slot;
         const friendly = group.every(p => p.owner === group[0].owner);
         const [bx, bz] = standPos(group[0].slot);
 
@@ -1963,15 +2212,22 @@
             p.setExpression('happy');
             if (p.bob) p.bob.position.y = Math.abs(beat) * 0.05;
           });
-          if (now - lastGiggle > 5200){
-            lastGiggle = now;
-            if (window.sayLine) sayLine(pair[Math.floor(Math.random()*2)], 'together', 2400);
+          if (!greeted.has(slot)){
+            greeted.add(slot);
+            if (window.sayLine) sayLine(pair[Math.floor(Math.random()*2)], 'together', 3000);
+          } else {
+            keepChatting(slot, pair);
           }
           return;
         }
 
         // mixed owners can only happen on 참먹이 after a 빽도 — let them squabble
-        if (now - lastBonk > 520){ lastBonk = now; if (window.playBicker) playBicker(); }
+        if (!bonked.has(slot)){
+          bonked.add(slot);
+          if (window.playBicker) playBicker();
+        } else {
+          keepChatting(slot, group);
+        }
         group.forEach((p,i) => {
           if (p.walking) return;
           const phase = (i % 2 === 0) ? 0 : Math.PI;
@@ -2000,6 +2256,7 @@
       pieceMeshes.forEach(p => p.tickAnim(now, dt));
       updateLabels();
       updateBubbles(now);
+      updateNameTags();
       for (let i=animations.length-1; i>=0; i--){
         const a = animations[i];
         const t = Math.min(1, (now-a.start)/a.duration);
@@ -2089,12 +2346,13 @@
   const SPEECH_LINES = [
     { // 시노 — 차분한 학생회장
       idle:   ['오늘 별자리가 좋네요.', '차례를 지켜서, 천천히.', '방까지 가면 지름길이 열려요.', '확률을 계산해 보면… 음.', '무리하지 않는 게 좋아요.'],
+      turn:   ['제 차례네요.', '침착하게 가죠.', '자, 던집니다.'],
       great:  ['좋아요, 계획대로.', '이 정도는 예상했어요.', '침착하게, 계속 갑니다.'],
       good:   ['나쁘지 않네요.', '순조로워요.'],
       meh:    ['한 칸이라도 전진이죠.', '괜찮아요, 아직 멀어요.'],
       bad:    ['…뒤로 가라니요.', '이건 계산에 없었는데.'],
       capture:['미안해요, 규칙이니까요.', '자리를 비워주시겠어요?'],
-      caught: ['어머, 제가 방심했네요.', '처음부터 다시 세우죠.'],
+      caught: ['앗! 제가 방심했네요.', '어머! 처음부터 다시군요.'],
       finish: ['먼저 들어가 있을게요.'],
       together:['같이 가면 든든하네요.', '손 잡고 가요.'],
       win:    ['모두 수고했어요.'],
@@ -2102,12 +2360,13 @@
     },
     { // 비타 — 씩씩한 모험가
       idle:   ['한 판 더 가자!', '내가 제일 빠를 거야!', '지름길? 당연히 타야지!', '몸이 근질근질하네.', '자, 누가 먼저 도착할까!'],
+      turn:   ['내 차례다!', '자, 간다!', '이번엔 모야!'],
       great:  ['좋았어어어!', '이게 바로 나야!', '오늘 손이 뜨겁다!'],
       good:   ['오케이, 순항 중!', '이 정도면 됐어!'],
       meh:    ['한 칸이라도 어디야.', '흠, 조금 아쉽네.'],
       bad:    ['으아아 뒤로?!', '말도 안 돼!'],
       capture:['미안, 내가 지나간다!', '비켜줄래?'],
-      caught: ['아아아 내 자리!', '이건 반칙이야!'],
+      caught: ['으악! 내 자리!', '으아앙! 이건 반칙이야!'],
       finish: ['1등으로 도착!'],
       together:['같이 가자, 손!', '둘이면 두 배로 빠르지!'],
       win:    ['내가 최고야!'],
@@ -2115,12 +2374,13 @@
     },
     { // 비비 — 발랄한 아이
       idle:   ['헤헤, 재밌겠다!', '나 오늘 운 좋은 것 같아!', '별이 반짝반짝해!', '누가 이길까~?', '방에 서고 싶다!'],
+      turn:   ['내 차례 내 차례!', '나 던질래!', '두근두근!'],
       great:  ['우와아 대박!', '나 좀 잘하는 것 같아!', '히히 신난다!'],
       good:   ['좋아좋아!', '순조로워~'],
       meh:    ['에헤… 한 칸.', '괜찮아 괜찮아!'],
       bad:    ['히잉 뒤로 갔어…', '너무해!'],
       capture:['잡았다! 히히', '앗, 미안해!'],
-      caught: ['우엥 잡혔어!', '처음부터 다시야…'],
+      caught: ['꺄악! 잡혔어!', '우엥! 처음부터 다시야…'],
       finish: ['나 도착했어!'],
       together:['히히 같이 가자!', '손 잡으니까 좋다!'],
       win:    ['이겼다! 야호!'],
@@ -2128,12 +2388,13 @@
     },
     { // 빅토리아 — 우아한 아가씨
       idle:   ['우아하게 한 바퀴, 어떨까요.', '서두를 필요 없어요.', '별자리 이름이 예쁘네요.', '이 판, 마음에 들어요.', '차 한 잔 하고 싶네요.'],
+      turn:   ['제 차례군요.', '그럼, 던져볼까요.', '기대되네요.'],
       great:  ['훌륭하군요.', '역시 제 운이에요.', '기분이 좋아요.'],
       good:   ['적당하네요.', '나쁘지 않아요.'],
       meh:    ['천천히 가도 괜찮아요.', '한 칸이면 충분해요.'],
       bad:    ['어머… 곤란하네요.', '이런 일도 있군요.'],
       capture:['실례하겠습니다.', '조금 비켜주시겠어요?'],
-      caught: ['어머나!', '이건 예상 밖이에요.'],
+      caught: ['어머나! 이런!', '아앗! 예상 밖이에요.'],
       finish: ['먼저 도착했어요.'],
       together:['함께 가시겠어요?', '손을 잡아도 될까요.'],
       win:    ['좋은 승부였어요.'],
@@ -2143,7 +2404,7 @@
   const LINE_FOR_CATEGORY = { mo:'great', yut:'great', geol:'good', gae:'good', do:'meh', backdo:'bad' };
 
   // only the punchy moments get spoken aloud — idle chatter stays as bubbles
-  const SPOKEN_KINDS = ['capture','caught','great','finish','win','lose','together'];
+  const SPOKEN_KINDS = ['capture','caught','great','good','meh','bad','turn','finish','win','lose','together'];
   function sayLine(pieceMesh, kind, ms){
     if (!pieceMesh || !board3d.speak) return;
     const persona = SPEECH_LINES[pieceMesh.personaIndex || 0] || SPEECH_LINES[0];
@@ -2387,7 +2648,8 @@
                  || board3d.pieceMeshes.find(pm => pm.owner === owner);
 
     // ---- watch her first, then throw ----
-    await board3d.focusOnPiece(thrower, 3.0);
+    await board3d.focusOnPiece(thrower, 3.2);
+    sayLine(thrower, 'turn', 2000);
     if (isBot){
       setBotThinking(true, '🤖 ' + thrower.charName + ' 생각 중…');
       thrower.setPose('think');
@@ -2412,6 +2674,7 @@
     board3d.hideSticks();
 
     showImpact(outcome);
+    sayAloud(outcome.result + (outcome.extraTurn ? '! 한 번 더!' : '!'), thrower.personaIndex);
     if (outcome.extraTurn) playDing();
     if (outcome.category==='backdo') playSad();
 
@@ -2571,18 +2834,20 @@
   function slerpBone(bone, target, k){ if (bone) bone.quaternion.slerp(target, k); }
 
   const VRM_POSES = {
-    idle:    { armDown: 1.30, armSwing: 0.05, elbow: 0.30, torso: 0.00, head: 0.00 },
+    // armDown is how far the arm is rotated from the T-pose: π/2 is straight
+    // down at the side, so anything much under 1.3 leaves her sticking out.
+    idle:    { armDown: 1.42, armSwing: 0.06, elbow: 0.26, torso: 0.00, head: 0.00 },
     // a compact underhand wind-up rather than throwing the arms overhead
     windup:  { armDown: 1.15, armSwing: 1.00, elbow: 0.65, torso:-0.07, head:-0.05 },
     release: { armDown: 1.10, armSwing:-0.95, elbow: 0.20, torso: 0.16, head: 0.08 },
     cheer:   { armDown:-0.70, armSwing:-0.20, elbow: 0.30, torso:-0.06, head:-0.12 },
     droop:   { armDown: 1.40, armSwing: 0.15, elbow: 0.12, torso: 0.20, head: 0.30 },
     // a small wave, and a hand-to-chin think — used while waiting and thinking
-    greet:   { armDown: 1.30, armSwing: 0.05, elbow: 0.30, armDownR: 0.15, armSwingR:-0.25, elbowR: 0.95, head:-0.06 },
+    greet:   { armDown: 1.42, armSwing: 0.06, elbow: 0.26, armDownR: 0.42, armSwingR:-0.20, elbowR: 1.05, head:-0.06 },
     // 업기 — the two of them hold the hand on the partner's side
-    holdR:   { armDown: 1.32, armSwing: 0.08, elbow: 0.30, armDownR: 0.92, armSwingR: 0.05, elbowR: 0.12, head:-0.04 },
-    holdL:   { armDown: 1.32, armSwing: 0.08, elbow: 0.30, armDownL: 0.92, armSwingL: 0.05, elbowL: 0.12, head:-0.04 },
-    think:   { armDown: 1.34, armSwing: 0.10, elbow: 0.35, armDownR: 0.55, armSwingR:-0.75, elbowR: 1.55, head: 0.14, torso: 0.06 },
+    holdR:   { armDown: 1.40, armSwing: 0.06, elbow: 0.26, armDownR: 1.16, armSwingR: 0.02, elbowR: 0.16, head:-0.04 },
+    holdL:   { armDown: 1.40, armSwing: 0.06, elbow: 0.26, armDownL: 1.16, armSwingL: 0.02, elbowL: 0.16, head:-0.04 },
+    think:   { armDown: 1.42, armSwing: 0.08, elbow: 0.30, armDownR: 0.85, armSwingR:-0.55, elbowR: 1.60, head: 0.14, torso: 0.06 },
   };
 
   // Each idol stands and celebrates differently. Poses may override a single
@@ -2590,30 +2855,32 @@
   // wave with one hand while another folds both in front.
   const PERSONA_POSES = [
     { // 시노 — 차분한 학생회장: 두 손을 앞으로 모으고, 기뻐도 절제된 만세
-      idle:  { armDown: 1.44, armSwing: 0.16, elbow: 0.85 },
-      greet: { armDown: 1.42, armSwing: 0.12, elbow: 0.9, head: 0.16 },   // 목례
-      think: { armDown: 1.40, armSwing: 0.08, elbow: 0.7, armDownR: 0.5, armSwingR:-0.8, elbowR: 1.6, head: 0.1 },
-      cheer: { armDown:-0.10, armSwing:-0.40, elbow: 0.80, head:-0.08 },
-      droop: { armDown: 1.46, armSwing: 0.04, elbow: 0.55, torso: 0.26, head: 0.34 },
+      idle:  { armDown: 1.46, armSwing: 0.13, elbow: 0.62 },
+      greet: { armDown: 1.46, armSwing: 0.13, elbow: 0.66, head: 0.16 },   // 목례
+      think: { armDown: 1.44, armSwing: 0.08, elbow: 0.55, armDownR: 0.9, armSwingR:-0.5, elbowR: 1.6, head: 0.1 },
+      cheer: { armDown: 0.10, armSwing:-0.35, elbow: 1.05, head:-0.08 },
+      droop: { armDown: 1.50, armSwing: 0.05, elbow: 0.45, torso: 0.26, head: 0.34 },
     },
-    { // 비타 — 씩씩한 모험가: 팔을 벌리고 당당하게, 기쁘면 두 손 만세
-      idle:  { armDown: 1.10, armSwing: 0.00, elbow: 0.16 },
-      greet: { armDown: 1.10, armSwing: 0.0, elbow: 0.2, armDownR:-0.55, armSwingR:-0.2, elbowR: 0.5 },  // 크게 손 흔들기
-      think: { armDown: 1.05, armSwing: 0.15, elbow: 0.2, torso:-0.05, head:-0.1 },
-      cheer: { armDown:-1.00, armSwing:-0.08, elbow: 0.12, torso:-0.10 },
-      droop: { armDown: 1.30, armSwing: 0.30, elbow: 0.10, torso: 0.12, head: 0.20 },
+    { // 비타 — 씩씩한 모험가: 두 손을 허리 앞에 두고 당당하게, 기쁘면 만세
+      idle:  { armDown: 1.34, armSwing: 0.02, elbow: 0.80 },
+      greet: { armDown: 1.34, armSwing: 0.02, elbow: 0.8, armDownR:-0.20, armSwingR:-0.18, elbowR: 0.75 },  // 크게 손 흔들기
+      think: { armDown: 1.32, armSwing: 0.10, elbow: 0.72, torso:-0.04, head:-0.1 },
+      cheer: { armDown:-0.85, armSwing:-0.10, elbow: 0.30, torso:-0.10 },
+      droop: { armDown: 1.44, armSwing: 0.18, elbow: 0.30, torso: 0.12, head: 0.20 },
     },
-    { // 비비 — 발랄한 아이: 한 손 흔들며 인사, 기쁘면 폴짝
-      idle:  { armDown: 1.30, armSwing: 0.10, elbow: 0.40, armDownR: 0.05, elbowR: 0.75 },
-      cheer: { armDown:-0.60, armSwing:-0.55, elbow: 0.50, head:-0.16 },
-      droop: { armDown: 1.40, armSwing: 0.08, elbow: 0.34, torso: 0.22, head: 0.32 },
+    { // 비비 — 발랄한 아이: 한 손을 살짝 들고, 기쁘면 폴짝
+      idle:  { armDown: 1.40, armSwing: 0.10, elbow: 0.34, armDownR: 1.18, elbowR: 0.85 },
+      greet: { armDown: 1.40, armSwing: 0.10, elbow: 0.34, armDownR: 0.30, armSwingR:-0.25, elbowR: 1.15, head:-0.08 },
+      think: { armDown: 1.42, armSwing: 0.06, elbow: 0.34, armDownR: 0.95, armSwingR:-0.45, elbowR: 1.55, head: 0.16 },
+      cheer: { armDown:-0.45, armSwing:-0.45, elbow: 0.60, head:-0.16 },
+      droop: { armDown: 1.46, armSwing: 0.08, elbow: 0.30, torso: 0.22, head: 0.32 },
     },
     { // 빅토리아 — 우아한 아가씨: 한 손은 가슴에, 기쁘면 조용히 손뼉
-      idle:  { armDown: 1.34, armSwing: 0.12, elbow: 0.45, armDownL: 1.05, elbowL: 1.15 },
-      greet: { armDown: 1.32, armSwing: 0.1, elbow: 0.5, armDownL: 0.95, elbowL: 1.3, head: 0.12 },
-      think: { armDown: 1.36, armSwing: 0.05, elbow: 0.5, armDownR: 0.45, armSwingR:-0.85, elbowR: 1.65, head: 0.12 },
-      cheer: { armDown: 0.35, armSwing:-0.55, elbow: 1.25, head:-0.06 },
-      droop: { armDown: 1.44, armSwing: 0.00, elbow: 0.75, torso: 0.24, head: 0.36 },
+      idle:  { armDown: 1.44, armSwing: 0.10, elbow: 0.32, armDownL: 1.28, elbowL: 1.40 },
+      greet: { armDown: 1.44, armSwing: 0.10, elbow: 0.34, armDownL: 1.22, elbowL: 1.50, head: 0.12 },
+      think: { armDown: 1.44, armSwing: 0.06, elbow: 0.34, armDownR: 0.9, armSwingR:-0.55, elbowR: 1.65, head: 0.12 },
+      cheer: { armDown: 0.55, armSwing:-0.45, elbow: 1.35, head:-0.06 },
+      droop: { armDown: 1.48, armSwing: 0.02, elbow: 0.60, torso: 0.24, head: 0.36 },
     },
   ];
   // VRM standard expression presets; VRM 0.x joy/sorrow/fun are mapped onto
@@ -2645,6 +2912,7 @@
       elbowL: bone('leftLowerArm'), elbowR: bone('rightLowerArm'),
       hipL: bone('leftUpperLeg'), hipR: bone('rightUpperLeg'),
       kneeL: bone('leftLowerLeg'), kneeR: bone('rightLowerLeg'),
+      footL: bone('leftFoot'), footR: bone('rightFoot'),
     };
 
     let nextBlink = 1 + Math.random()*4;
@@ -2657,7 +2925,7 @@
     return {
       group, joints, vrm, charName,
       pose: VRM_POSES.idle,
-      walking: false, walkPhase: 0, facing: 0, headExtra: 0, talking: false,
+      walking: false, walkPhase: 0, walkSpeed: 0, facing: 0, headExtra: 0, talking: false,
 
       personaIndex: personaIndex || 0,
       setPose(name){
@@ -2706,28 +2974,48 @@
         const elbowR = p.elbowR !== undefined ? p.elbowR : p.elbow;
         let swingL = p.armSwingL !== undefined ? p.armSwingL : p.armSwing;
         let swingR = p.armSwingR !== undefined ? p.armSwingR : p.armSwing;
-        let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0;
+        let hipL = 0, hipR = 0, kneeL = 0, kneeR = 0, footL = 0, footR = 0;
+        let armMixDown = null, armMixElbow = null, walkTwist = 0, walkRoll = 0;
 
         if (this.walking){
-          this.walkPhase += dt * 8;
+          // stride follows the body's real speed, so the feet stop skating
+          const rate = Math.max(2.4, Math.min(11, (this.walkSpeed || 2.7) * 2.9));
+          this.walkPhase += dt * rate;
           const w = this.walkPhase;
-          hipL = -Math.sin(w) * 0.5;  hipR = Math.sin(w) * 0.5;
-          kneeL = Math.max(0, Math.sin(w)) * 0.7;
-          kneeR = Math.max(0, -Math.sin(w)) * 0.7;
-          swingL = Math.sin(w) * 0.35; swingR = -Math.sin(w) * 0.35;
-          vrm.scene.position.y = Math.abs(Math.sin(w)) * 0.035;
+          // +X on a leg bone swings it backwards, so a forward step is -X and
+          // knee flexion is +X. The knee bends during the swing phase (just
+          // after toe-off) and stays almost straight while the leg carries her.
+          hipL = -Math.sin(w) * 0.44 - 0.03;
+          hipR =  Math.sin(w) * 0.44 - 0.03;
+          kneeL = 0.07 + 0.82 * Math.max(0, Math.sin(w - 3.7));
+          kneeR = 0.07 + 0.82 * Math.max(0, Math.sin(w - 3.7 + Math.PI));
+          footL = -(hipL + kneeL) * 0.55;
+          footR = -(hipR + kneeR) * 0.55;
+          // arms swing opposite the legs, loosely bent — not clasped in front
+          swingL = Math.sin(w) * 0.34; swingR = -Math.sin(w) * 0.34;
+          armMixDown = 1.36; armMixElbow = 0.36;
+          // she rises over the supporting leg and dips at each footfall
+          vrm.scene.position.y = 0.026 * (1 + Math.cos(2*w));
+          walkTwist = Math.sin(w) * 0.10;
+          walkRoll = Math.cos(w) * 0.045;
         } else {
           vrm.scene.position.y = Math.sin(now/(560 + (personaIndex||0)*70)) * 0.012;
         }
 
-        slerpBone(joints.shoulderL, armQuat(qT, 1, num(downL), num(swingL)), k);
-        slerpBone(joints.shoulderR, armQuat(qT, -1, num(downR), num(swingR)), k);
-        slerpBone(joints.elbowL, qT.setFromAxisAngle(AX_Y, -num(elbowL)), k);
-        slerpBone(joints.elbowR, qT.setFromAxisAngle(AX_Y, num(elbowR)), k);
+        const useDownL = armMixDown === null ? num(downL) : armMixDown;
+        const useDownR = armMixDown === null ? num(downR) : armMixDown;
+        const useElbowL = armMixElbow === null ? num(elbowL) : armMixElbow;
+        const useElbowR = armMixElbow === null ? num(elbowR) : armMixElbow;
+        slerpBone(joints.shoulderL, armQuat(qT, 1, useDownL, num(swingL)), k);
+        slerpBone(joints.shoulderR, armQuat(qT, -1, useDownR, num(swingR)), k);
+        slerpBone(joints.elbowL, qT.setFromAxisAngle(AX_Y, -useElbowL), k);
+        slerpBone(joints.elbowR, qT.setFromAxisAngle(AX_Y, useElbowR), k);
         slerpBone(joints.hipL, qT.setFromAxisAngle(AX_X, hipL), k);
         slerpBone(joints.hipR, qT.setFromAxisAngle(AX_X, hipR), k);
         slerpBone(joints.kneeL, qT.setFromAxisAngle(AX_X, kneeL), k);
         slerpBone(joints.kneeR, qT.setFromAxisAngle(AX_X, kneeR), k);
+        slerpBone(joints.footL, qT.setFromAxisAngle(AX_X, footL), k);
+        slerpBone(joints.footR, qT.setFromAxisAngle(AX_X, footR), k);
         slerpBone(joints.torso, qT.setFromAxisAngle(AX_X, num(p.torso)), k);
         slerpBone(joints.head, qT.setFromAxisAngle(AX_X, num(p.head) + num(this.headExtra)), k);
 
@@ -2740,9 +3028,15 @@
           qT.setFromAxisAngle(AX_X, -breathe);
           joints.chest.quaternion.slerp(qT, k);
         }
-        if (joints.hips && !this.walking){
-          qT.setFromAxisAngle(AX_Z, swayBody);
-          joints.hips.quaternion.slerp(qT, k * 0.6);
+        if (joints.hips){
+          if (this.walking){
+            qT.setFromAxisAngle(AX_Y, walkTwist);
+            qB.setFromAxisAngle(AX_Z, walkRoll);
+            joints.hips.quaternion.slerp(qT.multiply(qB), k);
+          } else {
+            qT.setFromAxisAngle(AX_Z, swayBody);
+            joints.hips.quaternion.slerp(qT, k * 0.6);
+          }
         }
         if (joints.neck){
           qT.setFromAxisAngle(AX_Y, Math.sin(now/3100 + ph) * 0.09);
@@ -2814,6 +3108,12 @@
     'stone_smallE','stone_smallF','stone_smallG','stone_smallH',
     'flower_redA','flower_yellowB','flower_purpleC','grass','grass_leafs',
     'crop_pumpkin','stump_round','tree_pineSmallA','tree_pineSmallC',
+    // one model per 절기
+    'crops_leafsStageA','lily_small','tree_small','crops_wheatStageA',
+    'plant_bushLarge','crops_cornStageB','flower_yellowA','grass_leafsLarge',
+    'lily_large','crops_cornStageD','plant_flatShort','tree_oak_fall',
+    'tree_blocks_fall','stump_old','tree_pineSmallB','tree_pineTallB',
+    'campfire_logs','stone_tallA','rock_largeC',
   ];
   async function loadProps(){
     const loader = new GLTFLoader();
@@ -2845,6 +3145,7 @@
   }
 
   window.board3d = initBoard3d(makeCharacter);
+  speakWelcome();
   board3d.pieceMeshes.forEach(p => p.setLookAtTarget && p.setLookAtTarget(board3d.camera));
 
   loadingEl.classList.add('done');
