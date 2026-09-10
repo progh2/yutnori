@@ -2402,31 +2402,50 @@
     }, { passive: false });
 
     // ---- sticks thrown in-scene near the active character ----
-    const STICK_LEN=0.5, STICK_W=0.075, STICK_H=0.06;
-    function stickMats(){
-      return [
-        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
-        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
-        new THREE.MeshStandardMaterial({ color:0xfbf1d9, roughness:0.6 }),
-        new THREE.MeshStandardMaterial({ color:0x6b4023, roughness:0.85 }),
-        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
-        new THREE.MeshStandardMaterial({ color:0x8a5a34, roughness:0.8 }),
-      ];
-    }
-    const sticks = [0,1,2,3].map(i => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(STICK_W,STICK_H,STICK_LEN), stickMats());
-      mesh.castShadow = true; mesh.visible = false;
-      if (i === MARKED_STICK){
-        const bandMesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(STICK_W*0.62, STICK_W*0.62, STICK_H+0.01, 14),
-          new THREE.MeshStandardMaterial({ color:0xe0473a, roughness:0.6 })
-        );
-        bandMesh.rotation.x = Math.PI/2;
-        mesh.add(bandMesh);
+    // A 윷가락 is a split branch: one flat cut face (배) and one rounded back
+    // (등). The result is the number of 배 facing up, so the shape has to say
+    // which way up each stick landed — a plain box could only say it in colour.
+    const STICK_LEN = 0.5, STICK_R = 0.042;
+    function makeStick(marked){
+      const g = new THREE.Group();
+      const pale = new THREE.MeshStandardMaterial({ color:0xf6ead0, roughness:0.55 });
+      const bark = new THREE.MeshStandardMaterial({ color:0x7a4d28, roughness:0.85 });
+      // the flat half sits on top: its upper face is the 배
+      const flat = new THREE.Mesh(new THREE.BoxGeometry(STICK_R*2, STICK_R, STICK_LEN), pale);
+      flat.position.y = STICK_R/2;
+      flat.castShadow = true;
+      g.add(flat);
+      // the rounded half below — the top of this cylinder hides inside the slab
+      const back = new THREE.Mesh(
+        new THREE.CylinderGeometry(STICK_R, STICK_R, STICK_LEN, 16, 1, false), bark);
+      back.rotation.x = Math.PI/2;
+      back.castShadow = true;
+      g.add(back);
+      // rounded ends, so it reads as a branch rather than a bar
+      [-1, 1].forEach(side => {
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(STICK_R, 12, 8), bark);
+        cap.scale.set(1, 1, 0.6);
+        cap.position.z = side * STICK_LEN/2;
+        g.add(cap);
+      });
+      if (marked){
+        // the 뒷도 mark: a band round the middle, on the flat face too
+        const band = new THREE.Mesh(
+          new THREE.CylinderGeometry(STICK_R*1.06, STICK_R*1.06, STICK_LEN*0.13, 16),
+          new THREE.MeshStandardMaterial({ color:0xe0473a, roughness:0.6 }));
+        band.rotation.x = Math.PI/2;
+        g.add(band);
+        const stripe = new THREE.Mesh(
+          new THREE.BoxGeometry(STICK_R*2.02, STICK_R*1.02, STICK_LEN*0.13),
+          new THREE.MeshStandardMaterial({ color:0xe0473a, roughness:0.6 }));
+        stripe.position.y = STICK_R/2;
+        g.add(stripe);
       }
-      scene.add(mesh);
-      return mesh;
-    });
+      g.visible = false;
+      scene.add(g);
+      return g;
+    }
+    const sticks = [0,1,2,3].map(i => makeStick(i === MARKED_STICK));
     const STICK_RESTS = [[-0.14,-0.07],[0.12,-0.08],[-0.11,0.09],[0.13,0.08]];
 
     async function throwSticksNear(spot){
@@ -2441,7 +2460,8 @@
       return function reveal(sticksUp){
         const endState = sticksUp.map((isFlat,i) => {
           const [dx,dz] = STICK_RESTS[i];
-          return { x: spot.x+dx, z: spot.z+dz, y: STICK_H/2, rx: isFlat?0:Math.PI, ry: Math.random()*Math.PI*2, spinX: 3+Math.floor(Math.random()*2) };
+          // rx 0 leaves the flat 배 face up; π rolls the rounded 등 up
+          return { x: spot.x+dx, z: spot.z+dz, y: STICK_R, rx: isFlat?0:Math.PI, ry: Math.random()*Math.PI*2, spinX: 3+Math.floor(Math.random()*2) };
         });
         return animate(1000, t => {
           const ePos = easeOutCubic(t);

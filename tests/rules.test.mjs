@@ -114,6 +114,56 @@ test('all 16 stick combinations give the traditional distribution', () => {
   assert.deepEqual(counts, { mo: 1, do: 3, gae: 6, geol: 4, yut: 1, backdo: 1 });
 });
 
+test('the number of 배 facing up names the result', () => {
+  // 윷가락 has a flat 배 and a rounded 등; the result is how many 배 land up.
+  // 배 1 = 도, 2 = 개, 3 = 걸, 4 = 윷, none at all = 모.
+  // (위키백과 「윷놀이」 — 앞이 하나면 도 … 모두 뒷면이면 모)
+  const table = [
+    [0, '모',  5,  true],
+    [1, '도',  1,  false],
+    [2, '개',  2,  false],
+    [3, '걸',  3,  false],
+    [4, '윷',  4,  true],
+  ];
+  for (const [flatUp, word, steps, again] of table){
+    // put the 배 on unmarked sticks, so the single-배 case is 도 and not 빽도
+    const chosen = [0, 1, 2, 3]
+      .filter(i => i !== api.MARKED_STICK)
+      .concat([api.MARKED_STICK])          // the marked one is used last
+      .slice(0, flatUp);
+    const pattern = [0, 1, 2, 3].map(i => chosen.includes(i));
+    const cat = api.classifySticks(pattern);
+    const info = api.CATEGORY_INFO[cat];
+    assert.equal(info.result, word, `${flatUp} 배 up should be ${word}, got ${info.result}`);
+    assert.equal(info.steps, steps, `${word} moves ${steps}칸`);
+    assert.equal(!!info.extraTurn, again, `${word} extra turn`);
+  }
+});
+
+test('a throw always shows the sticks it was judged from', () => {
+  // rollYut hands the same array to the 3D reveal that it classified, and the
+  // reveal lays a stick 배-up exactly when that entry is true
+  for (let i = 0; i < 400; i++){
+    const roll = api.rollYut();
+    assert.equal(roll.category, api.classifySticks(roll.sticks));
+    assert.equal(roll.result, api.CATEGORY_INFO[roll.category].result);
+    assert.equal(roll.steps, api.CATEGORY_INFO[roll.category].steps);
+    const flatUp = roll.sticks.filter(Boolean).length;
+    const expected = flatUp === 0 ? '모' : flatUp === 2 ? '개' : flatUp === 3 ? '걸'
+      : flatUp === 4 ? '윷' : (roll.sticks[api.MARKED_STICK] ? '빽도' : '도');
+    assert.equal(roll.result, expected, `${flatUp} 배 up but the screen would say ${roll.result}`);
+  }
+});
+
+test('the path is as long as the result promised', () => {
+  // a mid-board piece walks exactly the number of 칸 the result names
+  for (const [cat, info] of Object.entries(api.CATEGORY_INFO)){
+    const path = api.walkPath('o8', info.steps, false, 'o7');
+    assert.equal(path.length, Math.abs(info.steps),
+      `${info.result} should walk ${Math.abs(info.steps)} 밭, walked ${path.length}`);
+  }
+});
+
 test('빽도 is the marked stick landing alone', () => {
   const onlyMarked = [0,1,2,3].map(i => i === api.MARKED_STICK);
   assert.equal(api.classifySticks(onlyMarked), 'backdo');
