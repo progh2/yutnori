@@ -2046,34 +2046,48 @@
     // neighbours in the row pair off — [0]↔[1], [2]↔[3] … — and turn to face
     // each other. Each pair swaps speaker on its own timer.
     const CHAT_PAIRS = [[0,1],[2,3],[4,5],[6,7]];
-    // spaced well apart: eight of them talking over each other was a racket
-    const chat = CHAT_PAIRS.map((_, i) => ({ timer: 1.0 + i*2.6, speaker: i % 2 }));
-    function updateTitleChatter(now, dt){
-      CHAT_PAIRS.forEach((pair, pi) => {
-        const st = chat[pi];
-        st.timer -= dt;
-        if (st.timer <= 0){
-          st.timer = 9 + Math.random()*6;
-          st.speaker = Math.random() < 0.45 ? st.speaker : 1 - st.speaker;
+    // One line every 20 seconds for the whole line-up, not per pair — eight of
+    // them on their own timers turned the menu into a racket. Turns go round
+    // the shuffled cast so everyone gets a word in before anyone repeats.
+    const CHAT_EVERY = 20;          // seconds between lines
+    const CHAT_HOLD = 5200;         // how long that line stays up
+    const chat = { timer: 2.5, speaker: -1, until: 0, queue: [] };
+
+    function nextChatSpeaker(){
+      if (!chat.queue.length){
+        chat.queue = pieceMeshes.map((_, i) => i);
+        for (let i = chat.queue.length - 1; i > 0; i--){
+          const j = Math.floor(Math.random() * (i + 1));
+          [chat.queue[i], chat.queue[j]] = [chat.queue[j], chat.queue[i]];
         }
+      }
+      return chat.queue.pop();
+    }
+
+    function updateTitleChatter(now, dt){
+      chat.timer -= dt;
+      if (chat.timer <= 0){
+        chat.timer = CHAT_EVERY;
+        chat.speaker = nextChatSpeaker();
+        chat.until = now + CHAT_HOLD;
+        const me = pieceMeshes[chat.speaker];
+        // read aloud only when no one else is mid-sentence
+        if (me && window.sayLine) sayLine(me, 'idle', CHAT_HOLD - 300, { onlyIfQuiet: true });
+      }
+      const talking = now < chat.until;
+      CHAT_PAIRS.forEach(pair => {
         pair.forEach((mi, k) => {
           const me = pieceMeshes[mi], other = pieceMeshes[pair[1-k]];
           if (!me || !other) return;
           me.faceTowards(other.group.position.x - me.group.position.x,
                          other.group.position.z - me.group.position.z);
-          const speaking = k === st.speaker;
-          // a gesture now and then while talking; a nod while listening
+          const speaking = talking && mi === chat.speaker;
           const beat = Math.sin(now/620 + mi*2);
           // a small wave is gesture enough here; the big celebration poses
           // looked like a row of scarecrows at the title
           me.setPose(speaking && beat > 0.6 ? 'greet' : 'idle');
           me.setExpression(speaking ? 'neutral' : 'happy');
           if (me.setTalking) me.setTalking(speaking, now + mi*300);
-          if (speaking && st.spokeFor !== st.timer){
-            st.spokeFor = st.timer;
-            // read aloud only when no one else is mid-sentence
-            if (window.sayLine) sayLine(me, 'idle', 5000, { onlyIfQuiet: true });
-          }
           if ('headExtra' in me){
             me.headExtra = speaking ? Math.sin(now/420 + mi)*0.05
                                     : 0.1 + Math.sin(now/300 + mi)*0.09;
@@ -2084,6 +2098,9 @@
     function enterTitleMode(){
       titleMode = true;
       titleAngle = 0;
+      chat.timer = 2.5;
+      chat.speaker = -1;
+      chat.until = 0;
     }
     function exitTitleMode(){
       if (!titleMode) return Promise.resolve();
