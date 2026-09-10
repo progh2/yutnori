@@ -87,6 +87,7 @@ const EXPORTS = [
 const source = [
   blockWith('Yut throw model'),
   blockWith('Board graph'),
+  blockWith('const VOICE_TONE'),        // voices and laughs live with the audio
   blockWith('Game state + turn flow'),
   `globalThis.__api = { ${EXPORTS.join(', ')} };`,
 ].join('\n;\n');
