@@ -150,8 +150,9 @@ node tests/sw.test.mjs
 ## 개발 방식
 
 [plan.md](./plan.md)의 9단계 계획에 따라 단계적으로 개발하고, 이후의 개선 요청은
-[Stage 10 마일스톤](https://github.com/progh2/yutnori/milestone/10)에서 요청 하나당 이슈
-하나로 추적합니다. 각 이슈에는 무엇을 왜 그렇게 했는지 기록을 남깁니다.
+[Stage 10 마일스톤](https://github.com/progh2/yutnori/milestone/10)(연출·고증·에셋)과
+[Stage 11 마일스톤](https://github.com/progh2/yutnori/milestone/11)(로딩·캐싱)에서
+요청 하나당 이슈 하나로 추적합니다. 각 이슈에는 무엇을 왜 그렇게 했는지 기록을 남깁니다.
 
 - 개발: [game/index.html](./game/index.html) (단일 파일)
 - 배포: 같은 파일을 GitHub Pages(`docs/index.html`)와 Claude Artifact에 동시 배포
