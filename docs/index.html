@@ -1197,6 +1197,24 @@
   }
 </script>
 
+<script>
+  // ================= 내려받은 에셋 재활용 =================
+  // sw.js가 .vrm/.glb/소리/폰트를 캐시에 쥐고 있어, 두 번째 방문부터는
+  // 네트워크를 건드리지 않는다. GitHub Pages의 max-age=600으로는 30MB짜리
+  // 모델이 HTTP 캐시에서 밀려나는 걸 막을 수 없어 이 방법을 쓴다.
+  // Artifact처럼 등록이 막힌 곳에서는 조용히 지나가고 게임은 그대로 돌아간다.
+  if ('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('에셋 캐시를 쓸 수 없습니다 — 매번 내려받게 됩니다.', err);
+      });
+    });
+    // HTTP 캐시가 아니라 origin 저장소에 들어가므로, 자리를 비워야 할 때
+    // 먼저 지워지는 쪽에서 빼달라고 부탁해 둔다.
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  }
+</script>
+
 <script type="importmap">
 {
   "imports": {
@@ -3955,12 +3973,26 @@
     };
   })();
 
+  // 뒤 세 명은 앞 세 명과 같은 .vrm을 색만 바꿔 쓴다. 캐시를 켜두면 두 번째
+  // 슬롯은 원본 바이트를 재사용한다 — 4인 게임에서 gzip 9MB가 줄어든다.
+  // 파싱은 슬롯마다 새로 도니 텍스처 인스턴스가 갈라져 색 바꾸기는 그대로다.
+  THREE.Cache.enabled = true;
+  // 그 URL을 쓸 슬롯이 더 없으면 원본을 놓아준다. 모델 5개를 다 붙들고 있으면
+  // 파싱 결과와 별개로 30MB가 그냥 남는다.
+  const slotsPerUrl = CAST.reduce((m, c) => m.set(c.url, (m.get(c.url) || 0) + 1), new Map());
+  function releaseWhenDone(url){
+    const left = slotsPerUrl.get(url) - 1;
+    slotsPerUrl.set(url, left);
+    if (left <= 0) THREE.Cache.remove(url);
+  }
+
   async function loadIdol(i){
     const idol = CAST[i];
     shownProgress = 0;                      // the bar is per model now
     const gltf = await vrmLoader().loadAsync(idol.url, evt => {
       if (evt.total) setProgress(evt.loaded / evt.total);
     });
+    releaseWhenDone(idol.url);
     const vrm = gltf.userData.vrm;
     if (!vrm) throw new Error('not a VRM: ' + idol.url);
     if (VRMUtils.removeUnnecessaryVertices) VRMUtils.removeUnnecessaryVertices(gltf.scene);
@@ -4062,8 +4094,52 @@
   }
   window.showLoading = showLoading;
 
+  // 이번 판에서 지나간 것 전부 + 아직 쓰지 않은 모델. 무엇을 담을 값어치가
+  // 있는지는 sw.js가 가리므로(글꼴이든 CDN 스크립트든) 여기서는 고르지 않는다.
+  function assetsWorthKeeping(){
+    const loaded = performance.getEntriesByType('resource').map(e => e.name);
+    const rest = CAST.map(c => new URL(c.url, location.href).href);
+    return [...new Set([...loaded, ...rest])];          // 가벼운 것부터
+  }
+
+  // 타이틀 화면이 뜬 뒤, 한가한 틈에 캐시를 채워 둔다. 담는 일은 sw.js가 맡고,
+  // 페이지는 무엇을 담을지만 알려준다.
+  //   - 이미 화면에 쓴 소품·소리·모델: 처음 들어온 방문에서는 Service Worker가
+  //     조종석에 앉기 전에 지나가 버리므로 여기서 한 번 챙겨줘야 한다.
+  //     HTTP 캐시에 있으니 네트워크를 다시 타지 않는다.
+  //   - 아직 쓰지 않은 모델: 3·4인을 골랐을 때, 그리고 다음 방문에 기다리지
+  //     않도록 미리 받아둔다.
+  // 데이터를 아끼는 중이거나 회선이 느리면 손대지 않는다.
+  async function warmAssetCache(){
+    const conn = navigator.connection;
+    if (conn && (conn.saveData || /(^|-)2g$/.test(conn.effectiveType || ''))) return;
+    // 렌더 루프가 끊이지 않으니 한가한 순간은 오지 않을 수도 있다 — timeout을
+    // 붙여, 늦어도 3초 뒤에는 불리게 한다.
+    const idle = window.requestIdleCallback
+      ? fn => window.requestIdleCallback(fn, { timeout: 3000 })
+      : fn => setTimeout(fn, 3000);
+    // 등록이 막힌 곳(Artifact)에서는 ready가 영원히 기다리므로 따로 시한을 둔다
+    const worker = 'serviceWorker' in navigator
+      ? await Promise.race([
+          navigator.serviceWorker.ready.then(reg => navigator.serviceWorker.controller || reg.active),
+          new Promise(done => setTimeout(() => done(null), 5000)),
+        ]).catch(() => null)
+      : null;
+    idle(() => {
+      if (worker){
+        worker.postMessage({ type: 'warm', urls: assetsWorthKeeping() });
+        return;
+      }
+      // Service Worker가 없는 곳에서도 이번 판에서 쓸 모델은 미리 받아둔다
+      [...new Set(CAST.map(c => c.url))].reduce((chain, url) => chain.then(
+        () => fetch(url, { cache: 'force-cache' }).catch(() => {})
+      ), Promise.resolve());
+    });
+  }
+
   window.board3d = initBoard3d(cast);
   await board3d.ensureCast(INITIAL_CAST);
   speakWelcome();
   showLoading(false);
+  warmAssetCache();
 </script>

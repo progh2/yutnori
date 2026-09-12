@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'game/index.html'
+      - 'game/**'
       - 'tests/**'
       - '.github/workflows/test.yml'
   pull_request:
@@ -20,11 +20,15 @@ jobs:
           node-version: '20'
       - name: Rule tests
         run: node tests/rules.test.mjs
+      - name: Cache tests
+        run: node tests/sw.test.mjs
       - name: The deployed copy matches the source
         run: |
-          if ! diff -q game/index.html docs/index.html; then
-            echo "::error::docs/index.html is out of date — copy game/index.html over it"
-            diff game/index.html docs/index.html | head -40
-            exit 1
-          fi
-          echo "docs/index.html matches game/index.html"
+          for f in index.html sw.js; do
+            if ! diff -q "game/$f" "docs/$f"; then
+              echo "::error::docs/$f is out of date — copy game/$f over it"
+              diff "game/$f" "docs/$f" | head -40
+              exit 1
+            fi
+            echo "docs/$f matches game/$f"
+          done

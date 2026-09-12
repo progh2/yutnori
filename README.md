@@ -134,6 +134,16 @@ node tests/rules.test.mjs
 
 윷 16조합 전수 검사, 29밭 그래프와 24절기 배치, 경로 계산(지름길·방 꺾기·최단 11칸·빽도),
 업기·말 선택 점수·승리 판정, 캐릭터 8인의 대사 중복 여부를 확인합니다.
+
+에셋 캐시(`sw.js`)에도 테스트가 있습니다 — 브라우저 대신 `node:vm`에 Cache/fetch 대역을
+세워 두고 핸들러를 직접 불러, 캐시에 있는 모델은 네트워크를 타지 않는지, 받아오는 길에
+베껴 담아 페이지를 붙잡지는 않는지, HTML은 네트워크를 먼저 묻는지, `warm`이 404 하나에
+멈추지 않는지를 확인합니다.
+
+```
+node tests/sw.test.mjs
+```
+
 [GitHub Actions](https://github.com/progh2/yutnori/actions)에서 push마다 실행되고,
 `docs/index.html`이 `game/index.html`과 어긋나면 실패합니다.
 
@@ -155,3 +165,24 @@ node tests/rules.test.mjs
 - 캐릭터: VRoid 공식 샘플 VRM 5종 (+ 색조 변경 3종)
 - 지형지물: [Kenney Nature Kit](https://kenney.nl/assets/nature-kit) (CC0)
 - 소리: CC0 음원 + Web Audio API 합성음 폴백, Web Speech API 음성합성
+- 에셋 캐시: Service Worker([game/sw.js](./game/sw.js)) — 한 번 받은 모델·소품·음원을
+  Cache Storage에 쥐고 있어 두 번째 방문부터는 네트워크를 타지 않습니다. 덕분에
+  오프라인에서도 돌아갑니다
+
+### 에셋을 두 번 받지 않기
+
+VRM 5종은 gzip 기준 15MB입니다. GitHub Pages는 `cache-control: max-age=600`을 고정으로
+내려주고 헤더를 바꿀 수 없어, 이 덩치는 브라우저 HTTP 캐시에서 밀려나기 쉽습니다
+(특히 iOS Safari). 그래서 캐시 정책을 `sw.js`에서 직접 정합니다.
+
+- 모델·소품·음원·글꼴·CDN 스크립트는 캐시 우선, HTML은 네트워크 우선 (배포가 바로 반영)
+- 받아오는 길에 캐시에 담지는 않습니다 — `response.clone()`을 끼우면 페이지가 읽는
+  속도가 디스크 쓰기에 발목을 잡힙니다. 헤드리스 Chrome에서 6MB 모델을 15번씩 받아
+  재어 보니 파일당 중앙값 **38ms → 68ms**였고, 그냥 통과만 시킬 때는 35ms로 차이가
+  없었습니다
+- 담는 일은 타이틀 화면이 뜬 뒤, 페이지가 목록을 `postMessage`로 넘겨 맡깁니다.
+  그때는 HTTP 캐시에서 바로 나오므로 아무도 기다리지 않습니다
+- 그 틈에 아직 쓰지 않은 모델까지 받아둬서 3·4인을 골라도 기다리지 않습니다
+  (데이터 절약 모드나 2G에서는 건너뜁니다)
+- 같은 `.vrm`을 쓰는 슬롯이 둘이라도 원본은 한 번만 받습니다 (`THREE.Cache`),
+  다 쓰면 원본 바이트는 놓아줍니다
